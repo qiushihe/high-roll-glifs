@@ -20,7 +20,10 @@
     "strict": "off",
     "react/jsx-uses-vars": "error",
     "react/display-name": "off",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+
+    // Allow `while (true)` loops
+    "no-constant-condition": "off"
   },
   "globals": {
     "global": true,

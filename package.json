@@ -27,7 +27,10 @@
   "homepage": "https://github.com/qiushihe/high-roll-glifs",
   "dependencies": {
     "bluebird": "^3.5.5",
+    "draft-js": "^0.11.6",
+    "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.15",
+    "md5": "^2.2.1",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
@@ -37,7 +40,8 @@
     "redux-thunk": "^2.3.0",
     "reselect": "^4.0.0",
     "styled-components": "^4.3.2",
-    "styled-normalize": "^8.0.6"
+    "styled-normalize": "^8.0.6",
+    "uuid": "^8.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.0",
@@ -67,6 +71,7 @@
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "prettier": "^1.18.2",
+    "raw-loader": "^4.0.1",
     "sinon": "^7.3.2",
     "sinon-chai": "^3.3.0",
     "webpack": "^4.27.1",
