@@ -1,0 +1,36 @@
+{
+  "parser": "babel-eslint",
+  "extends": [
+    "prettier",
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "env": {
+    "node": true,
+    "browser": true,
+    "mocha": true
+  },
+  "plugins": [
+    "react",
+    "prettier",
+    "better-styled-components"
+  ],
+  "rules": {
+    "strict": "off",
+    "react/jsx-uses-vars": "error",
+    "react/display-name": "off",
+    "prettier/prettier": "error"
+  },
+  "globals": {
+    "global": true,
+    "chai": true,
+    "expect": true,
+    "sinon": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}
