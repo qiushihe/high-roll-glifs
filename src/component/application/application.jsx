@@ -1,5 +1,12 @@
 import React from "react";
 import PropTypes from "prop-types";
+import styled from "styled-components";
+
+import Editor from "/src/component/editor";
+
+const Base = styled.div`
+  height: 100%;
+`;
 
 class Application extends React.PureComponent {
   componentDidMount() {
@@ -8,7 +15,11 @@ class Application extends React.PureComponent {
   }
 
   render() {
-    return <h1>It Worked!</h1>;
+    return (
+      <Base>
+        <Editor onChange={(/* editor, data, value */) => {}} />
+      </Base>
+    );
   }
 }
 
