@@ -31,16 +31,37 @@ const parse = (adaptedLine, state) => {
 
     if (size(midfix) <= 0) {
       if (flow([trim, isEmpty])(content)) {
-        return {
-          lineType: "bullet-list-line",
-          lineContext: {
-            raw: bulletLineMatch[0],
-            list: {
-              type: "bullet",
-              leader: size(leader) + 1
-            }
+        const previousLine = last(state.previousLines);
+
+        if (previousLine) {
+          const { type: previousLineType } = previousLine;
+
+          if (previousLineType !== "settext-heading-line") {
+            return {
+              lineType: "bullet-list-line",
+              lineContext: {
+                raw: bulletLineMatch[0],
+                list: {
+                  type: "bullet",
+                  leader: size(leader) + 1
+                }
+              }
+            };
+          } else {
+            return null;
           }
-        };
+        } else {
+          return {
+            lineType: "bullet-list-line",
+            lineContext: {
+              raw: bulletLineMatch[0],
+              list: {
+                type: "bullet",
+                leader: size(leader) + 1
+              }
+            }
+          };
+        }
       } else {
         return null;
       }
