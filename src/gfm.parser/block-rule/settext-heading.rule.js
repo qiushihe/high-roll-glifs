@@ -1,4 +1,5 @@
 import last from "lodash/fp/last";
+import trim from "lodash/fp/trim";
 
 const SETTEXT_HEADING_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})(([^\\s]\\s*?)+)(\\s*)$",
@@ -32,8 +33,10 @@ const parse = (adaptedLine, state) => {
             raw: underlineMatch[0],
             settextHeading: {
               isUnderline: true,
-              // TODO: Populate `level` here.
-              level: 99
+              text: underlineMatch[2],
+              prefix: underlineMatch[1],
+              suffix: underlineMatch[5],
+              level: trim(underlineMatch[2]).match(/=/) ? 1 : 2
             }
           }
         };
@@ -56,8 +59,10 @@ const parse = (adaptedLine, state) => {
             raw: lineMatch[0],
             settextHeading: {
               isUnderline: false,
-              // TODO: Populate `level` here.
-              level: 99
+              text: lineMatch[2],
+              prefix: lineMatch[1],
+              suffix: lineMatch[4],
+              level: trim(nextLineMatch[2]).match(/=/) ? 1 : 2
             }
           }
         };

@@ -3,6 +3,8 @@ import forEach from "lodash/fp/forEach";
 import split from "lodash/fp/split";
 import first from "lodash/fp/first";
 import isEmpty from "lodash/fp/isEmpty";
+import compact from "lodash/fp/compact";
+import join from "lodash/fp/join";
 
 export const PASS = true;
 export const FAIL = false;
@@ -38,3 +40,22 @@ export const testAcceptance = rule =>
       });
     }
   });
+
+export const testProperties = (rule, prefix = "") => expectations => {
+  const description = isEmpty(prefix)
+    ? "result attributes"
+    : `result ${prefix}.* attributes`;
+
+  describe(description, () => {
+    forEach(([name, expected, input, state = {}]) => {
+      it(`${JSON.stringify(input)} should produce \`${name}\`: ${JSON.stringify(
+        expected
+      )}`, () => {
+        expect(rule.parse(adaptLines(input), state)).to.have.nested.property(
+          flow([compact, join(".")])([prefix, name]),
+          expected
+        );
+      });
+    })(expectations);
+  });
+};
