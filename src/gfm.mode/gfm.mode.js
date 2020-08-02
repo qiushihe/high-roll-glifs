@@ -1,12 +1,11 @@
 import flow from "lodash/fp/flow";
-import get from "lodash/fp/get";
-import size from "lodash/fp/size";
 import cond from "lodash/fp/cond";
+import negate from "lodash/fp/negate";
 import isEmpty from "lodash/fp/isEmpty";
 import constant from "lodash/fp/constant";
 import join from "lodash/fp/join";
 import stubTrue from "lodash/fp/stubTrue";
-import times from "lodash/fp/times";
+import trim from "lodash/fp/trim";
 
 import { parseBlock } from "/src/gfm.parser/block.parser";
 import { adaptStream, adaptString } from "/src/gfm.parser/line.adapter";
@@ -47,8 +46,12 @@ export default () => {
     // We only ever want to parse 1 whole line at a time (since our parser is written
     // this way), so only do anything at all if we're at the beginning of a line.
     if (stream.sol()) {
-      const { lineType, lineContext } = parseBlock(adaptStream(stream), state);
-      // console.log(lineType, lineContext);
+      const { lineType, lineContext, lineTokens } = parseBlock(
+        adaptStream(stream),
+        state
+      );
+
+      // console.log(lineType, lineContext, lineTokens);
 
       if (lineType && lineContext) {
         // Save line in state
@@ -57,15 +60,38 @@ export default () => {
         // Apply block level style
         styles.push(`line-background-${lineType}`);
 
-        // TODO: Parse inline styles
-        //       In order to parse inline tokens, we can't simply consume the
-        //       entire line like this. We have to traverse the line and actually
-        //       parse the line's content for inline tokens.
-        flow([get("raw"), size, times(() => stream.next())])(lineContext);
+        // Split inline tokens into "first one" (i.e. inline tokens for ths first/current
+        // character) and "rest" to be processed later.
+        const [firstInlineToken, ...restInlineTokens] = lineTokens;
+
+        // Apply inline tokens (if any) to the current character.
+        // TODO: Combine identical set of inline tokens for consecutive characters
+        const inlineTokenString = join(" ")(firstInlineToken);
+        if (flow([trim, negate(isEmpty)])(inlineTokenString)) {
+          styles.push(inlineTokenString);
+        }
+
+        // Consume the current character
+        stream.next();
+
+        // Save the remaining inline tokens
+        state.remainingInlineTokens = restInlineTokens;
       } else {
         stream.next();
       }
     } else {
+      if (!isEmpty(state.remainingInlineTokens)) {
+        const [
+          firstInlineToken,
+          ...restInlineTokens
+        ] = state.remainingInlineTokens;
+        const inlineTokenString = join(" ")(firstInlineToken);
+        if (flow([trim, negate(isEmpty)])(inlineTokenString)) {
+          styles.push(inlineTokenString);
+        }
+        state.remainingInlineTokens = restInlineTokens;
+      }
+
       stream.next();
     }
 

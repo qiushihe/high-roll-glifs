@@ -1,4 +1,4 @@
-import rule from "/src/gfm.parser/block-rule/paragraph.rule";
+import rule from "/src/gfm.parser/rule/block/paragraph.rule";
 
 import {
   PASS,
@@ -7,7 +7,7 @@ import {
   testProperties
 } from "/test/util/parser.util";
 
-describe("gfm.parser / block-rule / paragraph.rule", () => {
+describe("gfm.parser / rule / block / paragraph.rule", () => {
   testAcceptance(rule)([
     [FAIL, ""],
     [PASS, "word"],

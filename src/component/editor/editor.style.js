@@ -94,6 +94,15 @@ export const Base = styled(CodeMirror)`
     }
   }
 
+  .cm-block-syntax {
+    color: #afafaf;
+  }
+
+  .cm-code-span {
+    font-family: monospace;
+    background-color: #ffee66;
+  }
+
   .CodeMirror {
     height: 100%;
   }

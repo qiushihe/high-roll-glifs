@@ -1,4 +1,4 @@
-import rule from "/src/gfm.parser/block-rule/thematic-break.rule";
+import rule from "/src/gfm.parser/rule/block/thematic-break.rule";
 
 import {
   PASS,
@@ -7,7 +7,7 @@ import {
   testProperties
 } from "/test/util/parser.util";
 
-describe("gfm.parser / block-rule / thematic-break.rule", () => {
+describe("gfm.parser / rule / block / thematic-break.rule", () => {
   testAcceptance(rule)([
     [FAIL, "-"],
     [FAIL, "--"],

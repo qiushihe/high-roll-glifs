@@ -1,4 +1,4 @@
-import rule from "/src/gfm.parser/block-rule/settext-heading.rule";
+import rule from "/src/gfm.parser/rule/block/settext-heading.rule";
 
 import {
   PASS,
@@ -7,7 +7,7 @@ import {
   testProperties
 } from "/test/util/parser.util";
 
-describe("gfm.parser / block-rule / settext-heading.rule", () => {
+describe("gfm.parser / rule / block / settext-heading.rule", () => {
   testAcceptance(rule)([
     [FAIL, "line"],
     [FAIL, "="],
