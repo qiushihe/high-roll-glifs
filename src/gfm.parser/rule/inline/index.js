@@ -1,9 +1,9 @@
 import reduce from "lodash/fp/reduce";
 
-import blockSyntax from "./block-syntax.rule";
+import blockToken from "./block-token.rule";
 import codeSpan from "./code-span.rule";
 
-const RULES = [blockSyntax, codeSpan];
+const RULES = [blockToken, codeSpan];
 
 const RULES_BY_NAME = reduce(
   (result, rule) => ({ ...result, [rule.name]: rule }),

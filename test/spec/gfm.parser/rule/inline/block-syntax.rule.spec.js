@@ -1,5 +1,5 @@
 import atxHeadingRule from "/src/gfm.parser/rule/block/atx-heading.rule";
-import rule from "/src/gfm.parser/rule/inline/block-syntax.rule";
+import rule from "/src/gfm.parser/rule/inline/block-token.rule";
 
 import { adaptLines } from "/test/util/parser.util";
 

@@ -98,6 +98,35 @@ export const Base = styled(CodeMirror)`
     color: #afafaf;
   }
 
+  .cm-inline-syntax {
+    color: #afafaf;
+  }
+
+  .cm-atx-heading-level-1 {
+    font-size: 30px;
+    font-weight: bold;
+  }
+  .cm-atx-heading-level-2 {
+    font-size: 28px;
+    font-weight: normal;
+  }
+  .cm-atx-heading-level-3 {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .cm-atx-heading-level-4 {
+    font-size: 22px;
+    font-weight: normal;
+  }
+  .cm-atx-heading-level-5 {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  .cm-atx-heading-level-6 {
+    font-size: 16px;
+    font-weight: normal;
+  }
+
   .cm-code-span {
     font-family: monospace;
     background-color: #ffee66;
