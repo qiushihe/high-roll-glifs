@@ -99,7 +99,7 @@ export const Base = styled(CodeMirror)`
   }
 
   .cm-inline-syntax {
-    color: #afafaf;
+    color: red;
   }
 
   .cm-atx-heading-level-1 {

@@ -10,13 +10,16 @@ const parse = line => {
 
     const headingLevel = `atx-heading-level-${level}`;
 
-    return [
-      ...Array(size(prefix)).fill([headingLevel, "block-syntax"]),
-      ...Array(level).fill([headingLevel, "block-syntax"]),
-      [headingLevel, "block-syntax"],
-      ...Array(size(text)).fill([headingLevel]),
-      ...Array(size(suffix)).fill([headingLevel, "block-syntax"])
-    ];
+    return {
+      inlineTokens: [
+        ...Array(size(prefix)).fill([headingLevel, "block-syntax"]),
+        ...Array(level).fill([headingLevel, "block-syntax"]),
+        [headingLevel, "block-syntax"],
+        ...Array(size(text)).fill([headingLevel]),
+        ...Array(size(suffix)).fill([headingLevel, "block-syntax"])
+      ],
+      inlineContext: {}
+    };
   } else {
     return null;
   }

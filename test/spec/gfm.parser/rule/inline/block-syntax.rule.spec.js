@@ -4,6 +4,7 @@ import rule from "/src/gfm.parser/rule/inline/block-token.rule";
 import { adaptLines } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / inline / block-syntax.rule", () => {
+  // TODO: Finish this test
   it("should do something", () => {
     const line = adaptLines("  ### Heading Level 3 ##  ");
 
@@ -13,8 +14,12 @@ describe("gfm.parser / rule / inline / block-syntax.rule", () => {
       lineContext: { raw }
     } = atxHeadingRule.parse(line);
 
-    const tokens = rule.parse({ lineType, lineContext });
+    const { inlineTokens } = rule.parse(
+      { type: lineType, ...lineContext },
+      {},
+      line
+    );
 
-    expect(tokens).to.have.length(raw.length);
+    expect(inlineTokens).to.have.length(raw.length);
   });
 });

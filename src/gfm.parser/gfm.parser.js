@@ -4,28 +4,17 @@ import times from "lodash/fp/times";
 import isNil from "lodash/fp/isNil";
 import isEmpty from "lodash/fp/isEmpty";
 
-import { getRules as getBlockRules } from "./rule/block";
 import { getRules as getInlineRules } from "./rule/inline";
+import { parseBlock } from "./block.parser";
 
 export const parse = (stream, state) => {
-  const blockRules = getBlockRules();
   const inlineRules = getInlineRules();
 
-  let lineType = null;
-  let lineContext = null;
-  let lineTokens = null;
+  let inlineTokens = null;
+  let inlineContext = null;
 
   // Apply block level parsing rules.
-  for (let ruleIndex = 0; ruleIndex < size(blockRules); ruleIndex++) {
-    const blockRule = blockRules[ruleIndex];
-    const blockRuleResult = blockRule.parse(stream, state);
-
-    if (blockRuleResult) {
-      lineType = blockRuleResult.lineType;
-      lineContext = blockRuleResult.lineContext;
-      break;
-    }
-  }
+  const { lineType, lineContext } = parseBlock(stream, state);
 
   // If block level parsing is successful ...
   if (!isNil(lineType) && !isNil(lineContext)) {
@@ -33,26 +22,37 @@ export const parse = (stream, state) => {
     const lineLength = size(raw);
 
     // ... fill inline tokens array with empty arrays for each character ...
-    lineTokens = Array(lineLength).fill([]);
+    inlineTokens = Array(lineLength).fill([]);
+
+    // ... initialize inline context object ...
+    inlineContext = {};
 
     // ... then apply inline token parsing rules.
     for (let ruleIndex = 0; ruleIndex < size(inlineRules); ruleIndex++) {
       const inlineRule = inlineRules[ruleIndex];
-      const inlineRuleResult = inlineRule.parse({
-        type: lineType,
-        ...lineContext
-      });
+      const inlineRuleResult = inlineRule.parse(
+        {
+          type: lineType,
+          ...lineContext,
+          inline: { tokens: inlineTokens, ...inlineContext }
+        },
+        state,
+        stream
+      );
 
-      if (!isEmpty(inlineRuleResult)) {
-        times(characterIndex => {
-          lineTokens[characterIndex] = [
-            ...lineTokens[characterIndex],
-            ...getOr([], characterIndex)(inlineRuleResult)
-          ];
-        })(lineLength);
+      if (inlineRuleResult) {
+        if (!isEmpty(inlineRuleResult.inlineTokens)) {
+          times(characterIndex => {
+            inlineTokens[characterIndex] = [
+              ...inlineTokens[characterIndex],
+              ...getOr([], characterIndex)(inlineRuleResult.inlineTokens)
+            ];
+          })(lineLength);
+        }
+        inlineContext = inlineRuleResult.inlineContext;
       }
     }
   }
 
-  return { lineType, lineContext, lineTokens };
+  return { lineType, lineContext, inlineTokens, inlineContext };
 };

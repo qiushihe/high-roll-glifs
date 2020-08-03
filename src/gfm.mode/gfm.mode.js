@@ -33,11 +33,20 @@ export default () => {
 
     // Use `adaptString` to create a "fake"-ish adapted stream for the empty string so the block
     // parser can function as normal.
-    const { lineType, lineContext } = gfmParse(adaptString(""), state);
+    const { lineType, lineContext, inlineTokens, inlineContext } = gfmParse(
+      adaptString(""),
+      state
+    );
     // console.log(lineType, lineContext);
 
-    // Save line in state
-    state.previousLines = [{ type: lineType, ...lineContext }];
+    // Save previous line state
+    state.previousLines = [
+      {
+        type: lineType,
+        ...lineContext,
+        inline: { tokens: inlineTokens, ...inlineContext }
+      }
+    ];
 
     // Apply block level style
     return `line-background-${lineType}`;
@@ -49,16 +58,22 @@ export default () => {
     // We only ever want to parse 1 whole line at a time (since our parser is written
     // this way), so only do anything at all if we're at the beginning of a line.
     if (stream.sol()) {
-      const { lineType, lineContext, lineTokens } = gfmParse(
+      const { lineType, lineContext, inlineTokens, inlineContext } = gfmParse(
         adaptStream(stream),
         state
       );
 
-      // console.log(lineType, lineContext, lineTokens);
+      // console.log(lineType, lineContext, inlineTokens);
 
       if (lineType && lineContext) {
-        // Save line in state
-        state.previousLines = [{ type: lineType, ...lineContext }];
+        // Save previous line state
+        state.previousLines = [
+          {
+            type: lineType,
+            ...lineContext,
+            inline: { tokens: inlineTokens, ...inlineContext }
+          }
+        ];
 
         // Apply block level style
         styles.push(`line-background-${lineType}`);
@@ -66,15 +81,15 @@ export default () => {
         // TODO: Combine identical set of inline tokens for consecutive characters
 
         // If inline tokens for the current line is not empty ...
-        // (under normal circumstances this should always be true. Since `lineTokens` is an array
+        // (under normal circumstances this should always be true. Since `inlineTokens` is an array
         // of arrays -- each character of the line has an corresponding array of inline tokens for
-        // that character -- even for lines without any actual inline tokens, this `lineTokens`
+        // that character -- even for lines without any actual inline tokens, this `inlineTokens`
         // array should still contain a number of empty arrays equal to the number of characters
         // on the line)
-        if (!isEmpty(lineTokens)) {
+        if (!isEmpty(inlineTokens)) {
           // Split inline tokens into "first one" (i.e. inline tokens for ths first/current
           // character) and "rest" to be processed later.
-          const [firstInlineToken, ...restInlineTokens] = lineTokens;
+          const [firstInlineToken, ...restInlineTokens] = inlineTokens;
 
           // Apply inline tokens (if any) to the current character.
           const inlineTokenString = join(" ")(firstInlineToken);
