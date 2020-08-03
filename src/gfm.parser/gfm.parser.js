@@ -38,7 +38,10 @@ export const parse = (stream, state) => {
     // ... then apply inline token parsing rules.
     for (let ruleIndex = 0; ruleIndex < size(inlineRules); ruleIndex++) {
       const inlineRule = inlineRules[ruleIndex];
-      const inlineRuleResult = inlineRule.parse({ lineType, lineContext });
+      const inlineRuleResult = inlineRule.parse({
+        type: lineType,
+        ...lineContext
+      });
 
       if (!isEmpty(inlineRuleResult)) {
         times(characterIndex => {

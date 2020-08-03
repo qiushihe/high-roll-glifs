@@ -41,11 +41,13 @@ const parseText = flow([
   get("tokens")
 ]);
 
-const parse = ({ lineType, lineContext }) => {
+const parse = line => {
+  const { type: lineType } = line;
+
   if (lineType === "atx-heading-line") {
     const {
       atxHeading: { level, text, prefix, suffix }
-    } = lineContext;
+    } = line;
 
     return [
       ...Array(size(prefix)).fill([]),
@@ -55,7 +57,7 @@ const parse = ({ lineType, lineContext }) => {
       ...Array(size(suffix)).fill([])
     ];
   } else if (lineType === "paragraph-line") {
-    const { raw } = lineContext;
+    const { raw } = line;
     return parseText(raw);
   } else {
     return null;

@@ -1,10 +1,12 @@
 import size from "lodash/fp/size";
 
-const parse = ({ lineType, lineContext }) => {
+const parse = line => {
+  const { type: lineType } = line;
+
   if (lineType === "atx-heading-line") {
     const {
       atxHeading: { level, text, prefix, suffix }
-    } = lineContext;
+    } = line;
 
     const headingLevel = `atx-heading-level-${level}`;
 
@@ -20,4 +22,4 @@ const parse = ({ lineType, lineContext }) => {
   }
 };
 
-export default { name: "markdown-syntax", parse };
+export default { name: "block-token", parse };
