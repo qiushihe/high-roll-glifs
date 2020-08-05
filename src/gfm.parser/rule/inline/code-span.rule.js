@@ -2,199 +2,28 @@ import flow from "lodash/fp/flow";
 import size from "lodash/fp/size";
 import isEmpty from "lodash/fp/isEmpty";
 import isNil from "lodash/fp/isNil";
-import reduce from "lodash/fp/reduce";
 import get from "lodash/fp/get";
-import first from "lodash/fp/first";
-import includes from "lodash/fp/includes";
+import last from "lodash/fp/last";
+import constant from "lodash/fp/constant";
+import cond from "lodash/fp/cond";
+import eq from "lodash/fp/eq";
+import stubTrue from "lodash/fp/stubTrue";
 
-import { getFromMany } from "/src/util/function.util";
-
-import {
-  getInlineContext,
-  getPreviousInlineContext
-} from "/src/util/parser.util";
+import { stringStream } from "/src/util/stream.util";
 
 import { adaptString } from "../../line.adapter";
 import { parseBlock } from "../../block.parser";
 
-const parseCodeSpan = (text, line, state, stream) => {
-  return reduce(
-    ({ tokens, context }, character) => {
-      if (character === "`") {
-        if (context.inSpan) {
-          if (context.onSameLine) {
-            let sliceLength = size(tokens) - context.spanLength;
-            if (sliceLength < 0) {
-              sliceLength = 0;
-            }
+// TODO: Update this to ignore escaped markers
+// TODO: Update this to support double markers
+const CODE_SPAN_REGEXP = new RegExp("`[^`]*`");
 
-            return {
-              tokens: [
-                ...tokens.slice(0, sliceLength),
-                ["code-span", "inline-syntax"],
-                ...Array(context.spanLength - 1).fill(["code-span"]),
-                ["code-span", "inline-syntax"]
-              ],
-              context: { ...context, inSpan: false, spanLength: 1 }
-            };
-          } else {
-            let sliceLength = size(tokens) - context.spanLength;
-            if (sliceLength < 0) {
-              sliceLength = 0;
-            }
+const handleUnmatched = constant([]);
 
-            return {
-              tokens: [
-                ...tokens.slice(0, sliceLength),
-                ...Array(context.spanLength).fill(["code-span"]),
-                ["code-span", "inline-syntax"]
-              ],
-              context: { ...context, inSpan: false, spanLength: 0 }
-            };
-          }
-        } else {
-          return {
-            tokens: [...tokens, []],
-            context: {
-              ...context,
-              inSpan: true,
-              spanLength: 1,
-              onSameLine: true
-            }
-          };
-        }
-      } else {
-        const isFirst = isEmpty(tokens);
-        const isLast = size(tokens) >= size(text) - 1;
-
-        if (context.inSpan) {
-          if (isFirst) {
-            return {
-              tokens: [...tokens, []],
-              context: {
-                ...context,
-                spanLength: (context.spanLength || 0) + 1,
-                onSameLine: false
-              }
-            };
-          } else if (isLast) {
-            const lookAheadLines = context.lookAhead || 1;
-            const nextLineText = stream.lookAhead(lookAheadLines);
-
-            if (!isNil(nextLineText)) {
-              const {
-                lineType: nextLineType,
-                lineContext: nextLineContext
-              } = parseBlock(adaptString(nextLineText), {});
-
-              if (nextLineType === "paragraph-line") {
-                const nextLineResult = parseCodeSpan(
-                  nextLineText,
-                  {
-                    type: nextLineType,
-                    ...nextLineContext,
-                    inline: {
-                      tokens: Array(nextLineText.length).fill([]),
-                      ...context,
-                      lookAhead: lookAheadLines + 1
-                    }
-                  },
-                  state,
-                  stream
-                );
-
-                if (
-                  flow([get("tokens"), first, includes("code-span")])(
-                    nextLineResult
-                  )
-                ) {
-                  let sliceLength = size(tokens) - context.spanLength;
-                  if (sliceLength < 0) {
-                    sliceLength = 0;
-                  }
-
-                  if (context.onSameLine) {
-                    return {
-                      tokens: [
-                        ...tokens.slice(0, sliceLength),
-                        ["code-span", "inline-syntax"],
-                        ...Array(context.spanLength - 1).fill(["code-span"]),
-                        ["code-span"]
-                      ],
-                      context: {
-                        ...context,
-                        spanLength: (context.spanLength || 0) + 1
-                      }
-                    };
-                  } else {
-                    return {
-                      tokens: [
-                        ...tokens.slice(0, sliceLength),
-                        ...Array(context.spanLength).fill(["code-span"]),
-                        ["code-span"]
-                      ],
-                      context: {
-                        ...context,
-                        spanLength: (context.spanLength || 0) + 1
-                      }
-                    };
-                  }
-                } else {
-                  return {
-                    tokens: [...tokens, []],
-                    context: {
-                      ...context,
-                      spanLength: (context.spanLength || 0) + 1
-                    }
-                  };
-                }
-              } else {
-                return {
-                  tokens: [...tokens, []],
-                  context: {
-                    ...context,
-                    spanLength: (context.spanLength || 0) + 1
-                  }
-                };
-              }
-            } else {
-              return {
-                tokens: [...tokens, []],
-                context: {
-                  ...context,
-                  spanLength: (context.spanLength || 0) + 1
-                }
-              };
-            }
-          } else {
-            return {
-              tokens: [...tokens, []],
-              context: { ...context, spanLength: (context.spanLength || 0) + 1 }
-            };
-          }
-        } else {
-          return {
-            tokens: [...tokens, []],
-            context
-          };
-        }
-      }
-    },
-    {
-      tokens: [],
-      context: {
-        inSpan: getFromMany("inSpan")(
-          getInlineContext(line),
-          getPreviousInlineContext(state)
-        ),
-        lookAhead: getFromMany("lookAhead")(
-          getInlineContext(line),
-          getPreviousInlineContext(state)
-        )
-      }
-    }
-  )(text);
-};
+const handleMatched = cond([
+  [eq("`"), constant(["code-span", "inline-syntax"])],
+  [stubTrue, constant(["code-span"])]
+]);
 
 const parse = (line, state, stream) => {
   const { type: lineType } = line;
@@ -204,7 +33,11 @@ const parse = (line, state, stream) => {
       atxHeading: { level, text, prefix, suffix }
     } = line;
 
-    const { tokens } = parseCodeSpan(text, line, state, stream);
+    const tokens = stringStream(text).mapAllRegExp(
+      CODE_SPAN_REGEXP,
+      handleUnmatched,
+      handleMatched
+    );
 
     return {
       inlineTokens: [
@@ -214,20 +47,73 @@ const parse = (line, state, stream) => {
         ...tokens,
         ...Array(size(suffix)).fill([])
       ],
-
-      // Do not persist inline context because ATX heading can not have lazy continuation text.
       inlineContext: {}
     };
   } else if (lineType === "paragraph-line") {
     const { raw } = line;
-    const { tokens, context } = parseCodeSpan(raw, line, state, stream);
+    const lineSize = size(raw);
 
-    return {
-      inlineTokens: tokens,
+    const restInlineTokens = flow([
+      get("previousLines"),
+      last,
+      get("inline.restTokens")
+    ])(state);
 
-      // Persist inline context so consecutive paragraph can share continuous code spans.
-      inlineContext: context
-    };
+    if (!isEmpty(restInlineTokens)) {
+      const restInlineTokensCount = size(restInlineTokens);
+
+      // This shouldn't happen in theory (maybe it can happen under certain race conditions during
+      // active parsing cycles, I donno) ...
+      if (lineSize > restInlineTokensCount) {
+        return {
+          inlineTokens: [
+            ...restInlineTokens,
+            ...Array(lineSize - restInlineTokensCount).fill([])
+          ],
+          inlineContext: { restTokens: [] }
+        };
+      } else {
+        return {
+          inlineTokens: restInlineTokens.slice(0, lineSize),
+          inlineContext: { restTokens: restInlineTokens.slice(lineSize) }
+        };
+      }
+    } else {
+      let combinedLines = [raw];
+      let lookAhead = 1;
+
+      while (true) {
+        const lookAheadText = stream.lookAhead(lookAhead);
+
+        if (isNil(lookAheadText)) {
+          break;
+        }
+
+        const { lineType: lookAheadLineType } = parseBlock(
+          adaptString(lookAheadText),
+          { previousLines: [{ ...line, raw: last(combinedLines) }] }
+        );
+
+        if (lookAheadLineType === "paragraph-line") {
+          combinedLines = [...combinedLines, lookAheadText];
+        } else {
+          break;
+        }
+
+        lookAhead += 1;
+      }
+
+      const tokens = stringStream(combinedLines.join("")).mapAllRegExp(
+        CODE_SPAN_REGEXP,
+        handleUnmatched,
+        handleMatched
+      );
+
+      return {
+        inlineTokens: tokens.slice(0, lineSize),
+        inlineContext: { restTokens: tokens.slice(lineSize) }
+      };
+    }
   } else {
     return null;
   }
