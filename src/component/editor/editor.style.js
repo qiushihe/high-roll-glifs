@@ -132,7 +132,7 @@ export const Base = styled(CodeMirror)`
     background-color: #ffee66;
   }
 
-  .cm-link {
+  .cm-link-span {
     color: #00c;
     text-decoration: none;
   }

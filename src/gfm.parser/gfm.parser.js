@@ -33,7 +33,7 @@ export const parse = (stream, state) => {
       const inlineRuleResult = inlineRule.parse(
         {
           type: lineType,
-          ...lineContext,
+          context: lineContext,
           inline: { tokens: inlineTokens, context: inlineContext }
         },
         state,

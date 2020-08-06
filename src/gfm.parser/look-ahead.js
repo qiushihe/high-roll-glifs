@@ -5,7 +5,9 @@ import { parseBlock } from "./block.parser";
 import { adaptString } from "./line.adapter";
 
 export const collectLinesAhead = (line, stream, lineType) => {
-  const { raw } = line;
+  const {
+    context: { raw }
+  } = line;
 
   let lines = [raw];
   let lookAhead = 1;
@@ -19,7 +21,11 @@ export const collectLinesAhead = (line, stream, lineType) => {
 
     const { lineType: lookAheadLineType } = parseBlock(
       adaptString(lookAheadText),
-      { previousLines: [{ ...line, raw: last(lines) }] }
+      {
+        previousLines: [
+          { ...line, context: { ...line.context, raw: last(lines) } }
+        ]
+      }
     );
 
     if (lookAheadLineType === lineType) {

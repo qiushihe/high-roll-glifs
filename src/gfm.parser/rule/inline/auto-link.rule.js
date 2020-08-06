@@ -16,9 +16,9 @@ const AUTO_LINK_REGEXP = new RegExp("<([^>]*)>");
 const handleUnmatched = constant([]);
 
 const handleMatched = cond([
-  [eq("<"), constant(["link", "inline-syntax"])],
-  [eq(">"), constant(["link", "inline-syntax"])],
-  [stubTrue, constant(["link"])]
+  [eq("<"), constant(["link-span", "inline-syntax"])],
+  [eq(">"), constant(["link-span", "inline-syntax"])],
+  [stubTrue, constant(["link-span"])]
 ]);
 
 const parse = (line, state, stream) => {
@@ -26,7 +26,9 @@ const parse = (line, state, stream) => {
 
   if (lineType === "atx-heading-line") {
     const {
-      atxHeading: { level, text, prefix, suffix }
+      context: {
+        atxHeading: { level, text, prefix, suffix }
+      }
     } = line;
 
     const tokens = stringStream(text).mapAllRegExp(
@@ -60,8 +62,8 @@ const parse = (line, state, stream) => {
       );
 
       return {
-        inlineTokens: tokens.slice(0, size(line.raw)),
-        inlineContext: { restTokens: tokens.slice(size(line.raw)) }
+        inlineTokens: tokens.slice(0, size(line.context.raw)),
+        inlineContext: { restTokens: tokens.slice(size(line.context.raw)) }
       };
     }
   } else {

@@ -18,11 +18,11 @@ const parse = (adaptedLine, state) => {
   if (underlineMatch) {
     const previousLine = last(state.previousLines);
     if (previousLine) {
-      const previousUnderlineMatch = previousLine.raw.match(
+      const previousUnderlineMatch = previousLine.context.raw.match(
         SETTEXT_HEADING_UNDERLINE_REGEXP
       );
 
-      const previousLineMatch = previousLine.raw.match(
+      const previousLineMatch = previousLine.context.raw.match(
         SETTEXT_HEADING_LINE_REGEXP
       );
 

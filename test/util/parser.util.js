@@ -59,3 +59,5 @@ export const testProperties = (rule, prefix = "") => expectations => {
     })(expectations);
   });
 };
+
+export const lineContext = raw => ({ context: { raw } });

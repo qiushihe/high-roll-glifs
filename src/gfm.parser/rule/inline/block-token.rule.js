@@ -5,7 +5,9 @@ const parse = line => {
 
   if (lineType === "atx-heading-line") {
     const {
-      atxHeading: { level, text, prefix, suffix }
+      context: {
+        atxHeading: { level, text, prefix, suffix }
+      }
     } = line;
 
     const headingLevel = `atx-heading-level-${level}`;

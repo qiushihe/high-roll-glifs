@@ -20,7 +20,9 @@ const parse = (adaptedLine, state) => {
     const { type: previousLineType } = previousLine;
 
     if (previousLineType === "fenced-code-line") {
-      const { fencedCode } = previousLine;
+      const {
+        context: { fencedCode }
+      } = previousLine;
       inProgressFencedCode = fencedCode;
     }
   }

@@ -15,7 +15,7 @@ describe("gfm.parser / rule / inline / block-syntax.rule", () => {
     } = atxHeadingRule.parse(line);
 
     const { inlineTokens } = rule.parse(
-      { type: lineType, ...lineContext },
+      { type: lineType, context: lineContext },
       {},
       line
     );

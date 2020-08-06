@@ -26,7 +26,9 @@ const parse = (line, state, stream) => {
 
   if (lineType === "atx-heading-line") {
     const {
-      atxHeading: { level, text, prefix, suffix }
+      context: {
+        atxHeading: { level, text, prefix, suffix }
+      }
     } = line;
 
     const tokens = stringStream(text).mapAllRegExp(
@@ -60,8 +62,8 @@ const parse = (line, state, stream) => {
       );
 
       return {
-        inlineTokens: tokens.slice(0, size(line.raw)),
-        inlineContext: { restTokens: tokens.slice(size(line.raw)) }
+        inlineTokens: tokens.slice(0, size(line.context.raw)),
+        inlineContext: { restTokens: tokens.slice(size(line.context.raw)) }
       };
     }
   } else {

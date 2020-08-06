@@ -43,7 +43,7 @@ export default () => {
     state.previousLines = [
       {
         type: lineType,
-        ...lineContext,
+        context: lineContext,
         inline: { tokens: inlineTokens, context: inlineContext }
       }
     ];
@@ -70,7 +70,7 @@ export default () => {
         state.previousLines = [
           {
             type: lineType,
-            ...lineContext,
+            context: lineContext,
             inline: { tokens: inlineTokens, context: inlineContext }
           }
         ];

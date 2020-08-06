@@ -128,7 +128,9 @@ const parse = (adaptedLine, state) => {
         previousLineType === "bullet-list-line" ||
         previousLineType === "ordered-list-line"
       ) {
-        const { list: previousList } = previousLine;
+        const {
+          context: { list: previousList }
+        } = previousLine;
         const { leader: previousLeader } = previousList;
 
         const unmarkedLineMatch = adaptedLine.match(UNMARKED_LIST_LINE_REGEXP);

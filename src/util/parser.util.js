@@ -5,7 +5,9 @@ import get from "lodash/fp/get";
 import last from "lodash/fp/last";
 
 export const resumeInlineTokens = (line, state, contextNamespace) => {
-  const { raw } = line;
+  const {
+    context: { raw }
+  } = line;
   const lineSize = size(raw);
 
   const restTokens = flow([
