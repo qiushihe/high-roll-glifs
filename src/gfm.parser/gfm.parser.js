@@ -34,13 +34,15 @@ export const parse = (stream, state) => {
         {
           type: lineType,
           ...lineContext,
-          inline: { tokens: inlineTokens, ...inlineContext }
+          inline: { tokens: inlineTokens, context: inlineContext }
         },
         state,
         stream
       );
 
+      // If inline parsing was successful ...
       if (inlineRuleResult) {
+        // ... recombobulate the resulting inline tokens, ...
         if (!isEmpty(inlineRuleResult.inlineTokens)) {
           times(characterIndex => {
             inlineTokens[characterIndex] = [
@@ -49,7 +51,12 @@ export const parse = (stream, state) => {
             ];
           })(lineLength);
         }
-        inlineContext = inlineRuleResult.inlineContext;
+
+        // ... and persist the resulting inline context under the name of the rule
+        inlineContext = {
+          ...inlineContext,
+          [inlineRule.name]: inlineRuleResult.inlineContext
+        };
       }
     }
   }

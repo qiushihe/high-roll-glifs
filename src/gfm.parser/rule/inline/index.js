@@ -2,8 +2,9 @@ import reduce from "lodash/fp/reduce";
 
 import blockToken from "./block-token.rule";
 import codeSpan from "./code-span.rule";
+import autoLink from "./auto-link.rule";
 
-const RULES = [blockToken, codeSpan];
+const RULES = [blockToken, codeSpan, autoLink];
 
 const RULES_BY_NAME = reduce(
   (result, rule) => ({ ...result, [rule.name]: rule }),

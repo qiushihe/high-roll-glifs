@@ -2,10 +2,56 @@ import flow from "lodash/fp/flow";
 import constant from "lodash/fp/constant";
 import map from "lodash/fp/map";
 import join from "lodash/fp/join";
+import identity from "lodash/fp/identity";
 
 import { stringStream } from "/src/util/stream.util";
 
 describe("util / stream.util", () => {
+  describe("stringStream.mapToken", () => {
+    it("should map 0-length tokens", () => {
+      const stream = stringStream("test");
+      const tokens = stream.mapToken(constant(null), constant("1"));
+
+      expect(tokens.join("")).to.eq("");
+      expect(stream.remainingLength()).to.eq(0);
+    });
+
+    it("should map 1-length tokens", () => {
+      const tokenizer = (string, index) => string[index];
+      const stream = stringStream("test");
+      const tokens = stream.mapToken(tokenizer, constant("1"));
+
+      expect(tokens.join("")).to.eq("1111");
+      expect(stream.remainingLength()).to.eq(0);
+    });
+
+    it("should map >1-length tokens", () => {
+      const tokenizer = (string, index) => {
+        if (
+          string[index] === "o" &&
+          string[index + 1] === "n" &&
+          string[index + 2] === "e"
+        ) {
+          return "111";
+        } else if (
+          string[index] === "t" &&
+          string[index + 1] === "w" &&
+          string[index + 2] === "o"
+        ) {
+          return "222";
+        } else {
+          return string[index];
+        }
+      };
+
+      const stream = stringStream("zero one two");
+      const tokens = stream.mapToken(tokenizer, identity);
+
+      expect(tokens.join("")).to.eq("zero 111 222");
+      expect(stream.remainingLength()).to.eq(0);
+    });
+  });
+
   describe("stringStream.mapRegExp", () => {
     it("should report empty string's remaining length", () => {
       expect(stringStream("").remainingLength()).to.eq(0);

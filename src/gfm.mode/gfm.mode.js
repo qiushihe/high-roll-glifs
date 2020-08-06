@@ -44,7 +44,7 @@ export default () => {
       {
         type: lineType,
         ...lineContext,
-        inline: { tokens: inlineTokens, ...inlineContext }
+        inline: { tokens: inlineTokens, context: inlineContext }
       }
     ];
 
@@ -71,7 +71,7 @@ export default () => {
           {
             type: lineType,
             ...lineContext,
-            inline: { tokens: inlineTokens, ...inlineContext }
+            inline: { tokens: inlineTokens, context: inlineContext }
           }
         ];
 

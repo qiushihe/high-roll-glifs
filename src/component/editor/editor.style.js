@@ -95,11 +95,11 @@ export const Base = styled(CodeMirror)`
   }
 
   .cm-block-syntax {
-    color: #afafaf;
+    color: #afafaf !important;
   }
 
   .cm-inline-syntax {
-    color: red;
+    color: red !important;
   }
 
   .cm-atx-heading-level-1 {
@@ -130,6 +130,11 @@ export const Base = styled(CodeMirror)`
   .cm-code-span {
     font-family: monospace;
     background-color: #ffee66;
+  }
+
+  .cm-link {
+    color: #00c;
+    text-decoration: none;
   }
 
   .CodeMirror {

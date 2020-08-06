@@ -6,19 +6,19 @@ import eq from "lodash/fp/eq";
 import stubTrue from "lodash/fp/stubTrue";
 
 import { stringStream } from "/src/util/stream.util";
-import { resumeInlineTokens } from "/src/util/parser.util";
 
+import { resumeInlineTokens } from "../../../util/parser.util";
 import { collectLinesAhead } from "../../look-ahead";
 
-// TODO: Update this to ignore escaped markers
-// TODO: Update this to support double markers
-const CODE_SPAN_REGEXP = new RegExp("`[^`]*`");
+// TODO: Make this expression great again.
+const AUTO_LINK_REGEXP = new RegExp("<([^>]*)>");
 
 const handleUnmatched = constant([]);
 
 const handleMatched = cond([
-  [eq("`"), constant(["code-span", "inline-syntax"])],
-  [stubTrue, constant(["code-span"])]
+  [eq("<"), constant(["link", "inline-syntax"])],
+  [eq(">"), constant(["link", "inline-syntax"])],
+  [stubTrue, constant(["link"])]
 ]);
 
 const parse = (line, state, stream) => {
@@ -30,7 +30,7 @@ const parse = (line, state, stream) => {
     } = line;
 
     const tokens = stringStream(text).mapAllRegExp(
-      CODE_SPAN_REGEXP,
+      AUTO_LINK_REGEXP,
       handleUnmatched,
       handleMatched
     );
@@ -46,7 +46,7 @@ const parse = (line, state, stream) => {
       inlineContext: {}
     };
   } else if (lineType === "paragraph-line") {
-    const resumed = resumeInlineTokens(line, state, "code-span");
+    const resumed = resumeInlineTokens(line, state, "auto-link");
 
     if (!isNil(resumed)) {
       return { inlineTokens: resumed.tokens, inlineContext: resumed.context };
@@ -54,7 +54,7 @@ const parse = (line, state, stream) => {
       const combinedLines = collectLinesAhead(line, stream, lineType);
 
       const tokens = stringStream(combinedLines.join("")).mapAllRegExp(
-        CODE_SPAN_REGEXP,
+        AUTO_LINK_REGEXP,
         handleUnmatched,
         handleMatched
       );
@@ -69,4 +69,4 @@ const parse = (line, state, stream) => {
   }
 };
 
-export default { name: "code-span", parse };
+export default { name: "auto-link", parse };
