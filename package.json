@@ -5,6 +5,7 @@
   "main": "src/index.jsx",
   "scripts": {
     "dev": "webpack-dev-server --progress --hot --disable-host-check --host 0.0.0.0 --config ./webpack.config.dev.babel.js",
+    "build": "npm run eslint && webpack -p --progress --config ./webpack.config.build.babel.js",
     "eslint": "eslint --fix --ext .js --ext .jsx ./src ./test",
     "test-mocha": "cross-env NODE_ENV=test mocha",
     "test-cov": "cross-env NODE_ENV=test nyc npm run test-mocha",
