@@ -28,6 +28,7 @@
   "dependencies": {
     "bluebird": "^3.5.5",
     "codemirror": "^5.56.0",
+    "fastq": "^1.8.0",
     "lodash": "^4.17.15",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",

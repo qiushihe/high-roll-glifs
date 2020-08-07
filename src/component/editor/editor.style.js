@@ -96,6 +96,10 @@ export const Base = styled(CodeMirror)`
 
   .cm-block-syntax {
     color: #afafaf !important;
+
+    &.cm-hidden-block-syntax {
+      font-size: 0;
+    }
   }
 
   .cm-inline-syntax {
