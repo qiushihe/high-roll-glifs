@@ -1,25 +1,34 @@
 import size from "lodash/fp/size";
 import isNil from "lodash/fp/isNil";
 import constant from "lodash/fp/constant";
-import cond from "lodash/fp/cond";
-import eq from "lodash/fp/eq";
-import stubTrue from "lodash/fp/stubTrue";
 
 import { stringStream } from "/src/util/stream.util";
 import { resumeInlineTokens } from "/src/util/parser.util";
 
 import { collectLinesAhead } from "../../look-ahead";
 
-// TODO: Update this to ignore escaped markers
-// TODO: Update this to support double markers
-const CODE_SPAN_REGEXP = new RegExp("`[^`]*`");
+const CODE_SPAN_REGEXP = new RegExp(
+  "((?<!(?<!\\\\)`)((?<!\\\\)`)+(?![`]))(.+?)((?<![`])\\1(?![`]))"
+);
 
 const handleUnmatched = constant([]);
 
-const handleMatched = cond([
-  [eq("`"), constant(["code-span", "inline-syntax"])],
-  [stubTrue, constant(["code-span"])]
-]);
+const handleMatched = (character, index, matchResult) => {
+  const openLength = size(matchResult[1]);
+  const textLength = size(matchResult[3]);
+  const closeLength = size(matchResult[4]);
+
+  if (index < openLength) {
+    return ["code-span", "inline-syntax"];
+  } else if (
+    index >= openLength + textLength &&
+    index < openLength + textLength + closeLength
+  ) {
+    return ["code-span", "inline-syntax"];
+  } else {
+    return ["code-span"];
+  }
+};
 
 const parse = (line, state, stream) => {
   const { type: lineType } = line;

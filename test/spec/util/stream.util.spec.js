@@ -97,7 +97,7 @@ describe("util / stream.util", () => {
       expect(stream.remainingLength()).to.eq(0);
     });
 
-    it("should provide character, index and string to iterators", () => {
+    it("should provide character and index to iterators", () => {
       const stream = stringStream("a `bb`");
 
       let nonMatchArgs = [];
@@ -106,18 +106,18 @@ describe("util / stream.util", () => {
       while (stream.hasMore()) {
         stream.mapRegExp(
           new RegExp("`[^`]*`"),
-          (...args) => {
-            nonMatchArgs = [...nonMatchArgs, args];
+          (character, index) => {
+            nonMatchArgs = [...nonMatchArgs, [character, index]];
           },
-          (...args) => {
-            matchArgs = [...matchArgs, args];
+          (character, index) => {
+            matchArgs = [...matchArgs, [character, index]];
           }
         );
       }
 
       const serialize = flow([map(join(",")), join("|")]);
-      expect(serialize(nonMatchArgs)).to.eq("a,0,a `bb`| ,1,a `bb`");
-      expect(serialize(matchArgs)).to.eq("`,0,`bb`|b,1,`bb`|b,2,`bb`|`,3,`bb`");
+      expect(serialize(nonMatchArgs)).to.eq("a,0| ,1");
+      expect(serialize(matchArgs)).to.eq("`,0|b,1|b,2|`,3");
     });
   });
 });

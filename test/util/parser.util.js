@@ -5,6 +5,13 @@ import first from "lodash/fp/first";
 import isEmpty from "lodash/fp/isEmpty";
 import compact from "lodash/fp/compact";
 import join from "lodash/fp/join";
+import get from "lodash/fp/get";
+import map from "lodash/fp/map";
+import cond from "lodash/fp/cond";
+import constant from "lodash/fp/constant";
+import stubTrue from "lodash/fp/stubTrue";
+
+import { sameItemsAs } from "/src/util/function.util";
 
 export const PASS = true;
 export const FAIL = false;
@@ -61,3 +68,42 @@ export const testProperties = (rule, prefix = "") => expectations => {
 };
 
 export const lineContext = raw => ({ context: { raw } });
+
+export const testOutput = (rule, getOutput) =>
+  forEach(([input, output]) => {
+    it(`should correctly parse ${JSON.stringify(input)}`, () => {
+      expect(
+        getOutput(
+          rule.parse(
+            { type: "paragraph-line", context: { raw: input } },
+            {},
+            adaptLines(input)
+          )
+        )
+      ).to.eq(output);
+    });
+  });
+
+export const mapInlineTokens = (
+  tokenMappings,
+  emptyString = "x",
+  separator = ""
+) =>
+  flow([
+    get("inlineTokens"),
+    map(
+      cond([
+        [isEmpty, constant(emptyString)],
+        [
+          stubTrue,
+          cond(
+            map(([referenceItems, mappedString]) => [
+              sameItemsAs(referenceItems),
+              constant(mappedString)
+            ])(tokenMappings)
+          )
+        ]
+      ])
+    ),
+    join(separator)
+  ]);

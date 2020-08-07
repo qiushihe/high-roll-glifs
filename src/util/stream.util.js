@@ -65,7 +65,7 @@ export const stringStream = string => {
         const matchedStringPosition = stringPosition - matchStartIndex;
         if (matchedStringPosition < matchedStringLength) {
           result.push(
-            matchedIterator(character, matchedStringPosition, matchedString)
+            matchedIterator(character, matchedStringPosition, matchResult)
           );
           stringPosition += 1;
         } else {
