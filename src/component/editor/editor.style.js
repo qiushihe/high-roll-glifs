@@ -17,77 +17,77 @@ export const Base = styled(CodeMirror)`
 
   ${CodeMirrorCss};
 
-  .CodeMirror-linebackground.block-quote-line {
+  .CodeMirror-line.block-quote-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Block Quote";
     }
   }
 
-  .CodeMirror-linebackground.bullet-list-line {
+  .CodeMirror-line.bullet-list-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Bullet List";
     }
   }
 
-  .CodeMirror-linebackground.ordered-list-line {
+  .CodeMirror-line.ordered-list-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Ordered List";
     }
   }
 
-  .CodeMirror-linebackground.atx-heading-line {
+  .CodeMirror-line.atx-heading-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "ATX Heading";
     }
   }
 
-  .CodeMirror-linebackground.settext-heading-line {
+  .CodeMirror-line.settext-heading-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Settext Heading";
     }
   }
 
-  .CodeMirror-linebackground.indented-code-line {
+  .CodeMirror-line.indented-code-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Indented Code";
     }
   }
 
-  .CodeMirror-linebackground.fenced-code-line {
+  .CodeMirror-line.fenced-code-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Fenced Code";
     }
   }
 
-  .CodeMirror-linebackground.thematic-break-line {
+  .CodeMirror-line.thematic-break-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Thematic Break";
     }
   }
 
-  .CodeMirror-linebackground.paragraph-line {
+  .CodeMirror-line.paragraph-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Paragraph";
     }
   }
 
-  .CodeMirror-linebackground.blank-line {
+  .CodeMirror-line.blank-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Blank Line";
     }
   }
 
-  .CodeMirror-linebackground.empty-line {
+  .CodeMirror-line.empty-line {
     &:after {
       ${LineTypeIndicatorCss};
       content: "Empty Line";

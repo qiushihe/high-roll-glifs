@@ -49,7 +49,13 @@ export default () => {
     ];
 
     // Apply block level style
-    return `line-background-${lineType}`;
+    // IMPORTANT: DO NOT USE the `line-background-` prefix because otherwise it will cause an
+    //            extra `CodeMirror-linebackground` div to be inserted into the DOM and that
+    //            in turn causes the "backspace" key (and probably other things related to
+    //            keyboard events) to not work in Chrome on Android.
+    //            For more enlightening experience of reason and sensibleness, see this thread:
+    //            - https://bugs.chromium.org/p/chromium/issues/detail?id=118639
+    return `line-${lineType}`;
   };
 
   const parseToken = (stream, state) => {
@@ -76,7 +82,13 @@ export default () => {
         ];
 
         // Apply block level style
-        styles.push(`line-background-${lineType}`);
+        // IMPORTANT: DO NOT USE the `line-background-` prefix because otherwise it will cause an
+        //            extra `CodeMirror-linebackground` div to be inserted into the DOM and that
+        //            in turn causes the "backspace" key (and probably other things related to
+        //            keyboard events) to not work in Chrome on Android.
+        //            For more enlightening experience of reason and sensibleness, see this thread:
+        //            - https://bugs.chromium.org/p/chromium/issues/detail?id=118639
+        styles.push(`line-${lineType}`);
 
         // TODO: Combine identical set of inline tokens for consecutive characters
 
