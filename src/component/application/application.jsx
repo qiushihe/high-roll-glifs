@@ -2,7 +2,8 @@ import React from "react";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 
-import Editor, { EditorV6 } from "/src/component/editor";
+import Editor from "/src/component/editor";
+import EditorV6 from "/src/component/editor6";
 
 const Base = styled.div`
   height: 100%;
