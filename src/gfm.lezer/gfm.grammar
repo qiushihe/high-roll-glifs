@@ -1,0 +1,73 @@
+@top { block (newline block)* }
+
+block {
+  AtxHeading |
+  SettextHeading |
+  SettextHeadingUnderline |
+  ThematicBreak |
+  Paragraph |
+  Blank |
+  Empty
+}
+
+AtxHeading {
+  AtxPrefix?
+  AtxLevel
+  (AtxSpace AtxText)?
+  AtxSuffix?
+}
+
+SettextHeading {
+  SettextPrefix?
+  SettextText
+  SettextSuffix?
+}
+
+SettextHeadingUnderline {
+  SettextUnderlinePrefix?
+  SettextUnderlineText
+  SettextUnderlineSuffix?
+}
+
+ThematicBreak {
+  ThematicBreakPrefix?
+  ThematicBreakText
+  ThematicBreakSuffix?
+}
+
+Paragraph { ParagraphText }
+
+Blank { blank }
+
+Empty { "" }
+
+@tokens {
+  newline { "\n" }
+}
+
+@external tokens atxHeadingTokenizer from "___EXT_TOKENS" {
+  AtxPrefix,
+  AtxLevel,
+  AtxSpace,
+  AtxText,
+  AtxSuffix
+}
+
+@external tokens settextHeadingTokenizer from "___EXT_TOKENS" {
+  SettextPrefix,
+  SettextText,
+  SettextSuffix
+  SettextUnderlinePrefix,
+  SettextUnderlineText,
+  SettextUnderlineSuffix
+}
+
+@external tokens thematicBreakTokenizer from "___EXT_TOKENS" {
+  ThematicBreakPrefix,
+  ThematicBreakText,
+  ThematicBreakSuffix
+}
+
+@external tokens paragraphTokenizer from "___EXT_TOKENS" { ParagraphText }
+
+@external tokens blankTokenizer from "___EXT_TOKENS" { blank }

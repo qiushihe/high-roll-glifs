@@ -27,9 +27,13 @@
   },
   "homepage": "https://github.com/qiushihe/high-roll-glifs",
   "dependencies": {
+    "@codemirror/next": "^0.9.0",
     "bluebird": "^3.5.5",
     "codemirror": "^5.56.0",
     "fastq": "^1.8.0",
+    "lezer": "^0.10.0",
+    "lezer-generator": "^0.10.1",
+    "lezer-tree": "^0.10.0",
     "lodash": "^4.17.15",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
