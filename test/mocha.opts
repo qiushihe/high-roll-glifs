@@ -1,6 +1,7 @@
---require ./test/babel-register.js
---require test/provider/assets-stub.provider.js
---require test/provider/chai.provider.js
---require test/provider/sinon.provider.js
+--extension js,ts
+--require ./test/babel-register.ts
+--require test/provider/assets-stub.provider.ts
+--require test/provider/chai.provider.ts
+--require test/provider/sinon.provider.ts
 --reporter spec
 --recursive test

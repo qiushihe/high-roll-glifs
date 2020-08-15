@@ -6,7 +6,7 @@ import HtmlWebpackPlugin from "html-webpack-plugin";
 
 export default {
   entry: {
-    bundle: "./src/index.jsx"
+    bundle: "./src/index.tsx"
   },
   output: {
     filename: "[name].js",

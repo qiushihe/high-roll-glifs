@@ -16,15 +16,17 @@ import {
 
 import { Extension } from "@codemirror/next/state";
 
-import { adaptStream } from "./line.adapter";
+import { adaptStream } from "./stream/adapter";
+import lineStream from "./stream/line.stream";
 import { parse as gfmParse } from "./gfm.parser";
+import { ParserState } from "/src/gfm.parser/type";
 
 type DecorationIndex = { [key: string]: Decoration };
 type DecorationMapping = { [key: string]: string };
 
 const LINE_DECORATOR: DecorationIndex = flow([
   (mapping: DecorationMapping) => ({ keys: keys(mapping), mapping }),
-  ({ keys, mapping }: {keys: string[], mapping: DecorationMapping}) =>
+  ({ keys, mapping }: { keys: string[]; mapping: DecorationMapping }) =>
     reduce(
       (result: DecorationIndex, key: string) => ({
         ...result,
@@ -45,12 +47,12 @@ const LINE_DECORATOR: DecorationIndex = flow([
   "indented-code-line": "indented-code",
   "thematic-break-line": "thematic-break",
   "blank-line": "blank",
-  "empty-line": "empty",
+  "empty-line": "empty"
 });
 
 const INLINE_DECORATOR: DecorationIndex = flow([
   (mapping: DecorationMapping) => ({ keys: keys(mapping), mapping }),
-  ({ keys, mapping }: {keys: string[], mapping: DecorationMapping}) =>
+  ({ keys, mapping }: { keys: string[]; mapping: DecorationMapping }) =>
     reduce(
       (result: DecorationIndex, key: string) => ({
         ...result,
@@ -67,56 +69,7 @@ const INLINE_DECORATOR: DecorationIndex = flow([
   "link-span": "link-span"
 });
 
-interface LineStreamLineState {
-  type: string;
-  context: unknown;
-  inline: {
-    tokens: string[][];
-    context: unknown;
-  }
-}
-
-interface LineStreamState {
-  previousLines: LineStreamLineState[]
-}
-
-interface LineStream {
-  index: () => number;
-  position: () => number;
-  text: () => string | null;
-  next: () => void;
-  ended: () => boolean;
-  match: (regexp: RegExp, UNUSED_consume: boolean) => RegExpMatchArray | null;
-  lookAhead: (offset: number) => string | null;
-}
-
-const lineStream = (lines: string[]): LineStream => {
-  let lineIndex = 0;
-
-  const index = (): number => lineIndex;
-
-  const position = (): number => {
-    const lengthBefore = lines.slice(0, lineIndex).join("\n").length;
-    return lengthBefore <= 0 ? 0 : lengthBefore + 1;
-  };
-
-  const text = (): string | null => lines[lineIndex];
-
-  const next = () => { lineIndex += 1; };
-
-  const ended = (): boolean => lineIndex >= lines.length;
-
-  const match = (regexp: RegExp): RegExpMatchArray | null => {
-    const line = text();
-    return line === null || line === undefined ? null : line.match(regexp);
-  };
-
-  const lookAhead = (offset: number): string | null => lines[lineIndex + offset];
-
-  return { index, position, text, next, ended, match, lookAhead };
-};
-
-class TestDecorator {
+class GfmDecorator {
   decorations: DecorationSet;
 
   constructor(view: EditorView) {
@@ -143,31 +96,53 @@ class TestDecorator {
       viewportLines.push(view.state.doc.line(i).slice());
     }
 
-    const state: LineStreamState = { previousLines: [] };
+    const state: ParserState = { previousLines: [] };
     const stream = lineStream(viewportLines);
 
     while (!stream.ended()) {
-      const { lineType, lineContext, inlineTokens, inlineContext } = gfmParse(adaptStream(stream), state);
+      const parseResult = gfmParse(adaptStream(stream), state);
 
-      const lineDecorator = LINE_DECORATOR[lineType];
-      if (lineDecorator) {
-        deco.push(lineDecorator.range(viewport.from + stream.position()));
-      }
+      if (parseResult) {
+        const {
+          lineType,
+          lineContext,
+          inlineTokens,
+          inlineContext
+        } = parseResult;
 
-      state.previousLines = [
-        {
-          type: lineType,
-          context: lineContext,
-          inline: { tokens: inlineTokens, context: inlineContext }
+        const lineDecorator = LINE_DECORATOR[lineType];
+        if (lineDecorator) {
+          deco.push(lineDecorator.range(viewport.from + stream.position()));
         }
-      ];
 
-      for (let inlineIndex = 0; inlineIndex < inlineTokens.length; inlineIndex++) {
-        for (let tokenIndex = 0; tokenIndex < inlineTokens[inlineIndex].length; tokenIndex++) {
-          const inlineDecorator = INLINE_DECORATOR[inlineTokens[inlineIndex][tokenIndex]];
-          if (inlineDecorator) {
-            const inlinePosition = viewport.from + stream.position() + inlineIndex;
-            deco.push(inlineDecorator.range(inlinePosition, inlinePosition + 1));
+        state.previousLines = [
+          {
+            type: lineType,
+            context: lineContext,
+            inline: { tokens: inlineTokens, context: inlineContext }
+          }
+        ];
+
+        for (
+          let inlineIndex = 0;
+          inlineIndex < inlineTokens.length;
+          inlineIndex++
+        ) {
+          const tokensAtIndex = inlineTokens[inlineIndex] || [];
+
+          for (
+            let tokenIndex = 0;
+            tokenIndex < tokensAtIndex.length;
+            tokenIndex++
+          ) {
+            const inlineDecorator = INLINE_DECORATOR[tokensAtIndex[tokenIndex]];
+            if (inlineDecorator) {
+              const inlinePosition =
+                viewport.from + stream.position() + inlineIndex;
+              deco.push(
+                inlineDecorator.range(inlinePosition, inlinePosition + 1)
+              );
+            }
           }
         }
       }
@@ -179,11 +154,9 @@ class TestDecorator {
   }
 }
 
-const testDecorations = ViewPlugin.fromClass(
-  TestDecorator
-).decorations();
+const gfmDecorations = ViewPlugin.fromClass(GfmDecorator).decorations();
 
-const testTheme = EditorView.baseTheme({
+const gfmTheme = EditorView.baseTheme({
   "test-line": {
     color: "#ff0000"
   },
@@ -204,4 +177,4 @@ const testTheme = EditorView.baseTheme({
   }
 });
 
-export default (): Extension[] => [testTheme, testDecorations];
+export default (): Extension[] => [gfmTheme, gfmDecorations];
