@@ -1,0 +1,89 @@
+@top { block (newline block)* }
+
+block {
+  AtxHeading |
+  SettextHeading |
+  SettextHeadingUnderline |
+  ThematicBreak |
+  BlockQuote |
+  Paragraph |
+  Blank |
+  Empty
+}
+
+AtxHeading {
+  AtxPrefix?
+  AtxLevel
+  (AtxSpace AtxText)?
+  AtxSuffix?
+}
+
+SettextHeading {
+  SettextPrefix?
+  SettextText
+  SettextSuffix?
+}
+
+SettextHeadingUnderline {
+  SettextUnderlinePrefix?
+  SettextUnderlineText
+  SettextUnderlineSuffix?
+}
+
+ThematicBreak {
+  ThematicBreakPrefix?
+  ThematicBreakText
+  ThematicBreakSuffix?
+}
+
+BlockQuote {
+  BlockQuotePrefix?
+  BlockQuoteText
+}
+
+paragraphText { (ParagraphTextNormal | ParagraphTextCodeSpan | ParagraphTextAutoLink)+ }
+Paragraph { paragraphText }
+
+Blank { BlankText }
+
+Empty { "" }
+
+@tokens {
+  newline { "\n" }
+}
+
+@external tokens atxHeadingTokenizer from "___EXT_TOKENS" {
+  AtxPrefix,
+  AtxLevel,
+  AtxSpace,
+  AtxText,
+  AtxSuffix
+}
+
+@external tokens settextHeadingTokenizer from "___EXT_TOKENS" {
+  SettextPrefix,
+  SettextText,
+  SettextSuffix,
+  SettextUnderlinePrefix,
+  SettextUnderlineText,
+  SettextUnderlineSuffix
+}
+
+@external tokens thematicBreakTokenizer from "___EXT_TOKENS" {
+  ThematicBreakPrefix,
+  ThematicBreakText,
+  ThematicBreakSuffix
+}
+
+@external tokens blockQuoteTokenizer from "___EXT_TOKENS" {
+  BlockQuotePrefix,
+  BlockQuoteText
+}
+
+@external tokens paragraphTokenizer from "___EXT_TOKENS" {
+  ParagraphTextNormal,
+  ParagraphTextCodeSpan,
+  ParagraphTextAutoLink
+}
+
+@external tokens blankTokenizer from "___EXT_TOKENS" { BlankText }

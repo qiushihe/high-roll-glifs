@@ -3,22 +3,35 @@ import PropTypes from "prop-types";
 import styled from "styled-components";
 
 import Editor from "/src/component/editor";
+import EditorV6 from "/src/component/editor6";
 
 const Base = styled.div`
   height: 100%;
 `;
 
 class Application extends React.PureComponent {
+  constructor(...args) {
+    super(...args);
+
+    this.useV6 = true;
+  }
+
   componentDidMount() {
     const { onMount } = this.props;
     onMount();
   }
 
+  renderEditor() {
+    return <Editor onChange={(/* editor, data, value */) => {}} />;
+  }
+
+  renderEditorV6() {
+    return <EditorV6 onChange={(/* editor, data, value */) => {}} />;
+  }
+
   render() {
     return (
-      <Base>
-        <Editor onChange={(/* editor, data, value */) => {}} />
-      </Base>
+      <Base>{this.useV6 ? this.renderEditorV6() : this.renderEditor()}</Base>
     );
   }
 }

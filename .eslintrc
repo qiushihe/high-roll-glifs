@@ -1,10 +1,14 @@
 {
-  "parser": "babel-eslint",
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "ecmaVersion": 6
+  },
   "extends": [
     "prettier",
     "eslint:recommended",
     "plugin:react/recommended",
-    "plugin:prettier/recommended"
+    "plugin:prettier/recommended",
+    "plugin:@typescript-eslint/recommended"
   ],
   "env": {
     "node": true,
@@ -12,9 +16,11 @@
     "mocha": true
   },
   "plugins": [
+    "@babel",
     "react",
     "prettier",
-    "better-styled-components"
+    "better-styled-components",
+    "@typescript-eslint"
   ],
   "rules": {
     "strict": "off",
@@ -22,9 +28,26 @@
     "react/display-name": "off",
     "prettier/prettier": "error",
 
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "varsIgnorePattern": "^UNUSED_",
+      "argsIgnorePattern": "^UNUSED_"
+    }],
+
+    // Allow the declaration of empty functions `() => {}`
+    "@typescript-eslint/no-empty-function": "off",
+
     // Allow the use of `while (true)` loop
     "no-constant-condition": "off"
   },
+  "overrides": [
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-empty-function": "off"
+      }
+    }
+  ],
   "globals": {
     "global": true,
     "chai": true,
