@@ -5,13 +5,25 @@ import cond from "lodash/fp/cond";
 import isNil from "lodash/fp/isNil";
 import isEmpty from "lodash/fp/isEmpty";
 
-export const stringStream = string => {
-  const stream = {};
+import {
+  Tokenizer,
+  TokenMapper,
+  MapToken,
+  MapMatch,
+  MapUnMatch,
+  MapRegExp,
+  MapAllRegExp,
+  StringStream
+} from "./stream.util.type";
 
+export const stringStream = (string: string): StringStream => {
   const stringLength = size(string);
   let stringPosition = 0;
 
-  stream.mapToken = (tokenizer, iterator) => {
+  const mapToken: MapToken = (
+    tokenizer: Tokenizer,
+    iterator: TokenMapper
+  ): (string | null)[] => {
     const result = [];
 
     while (true) {
@@ -35,7 +47,11 @@ export const stringStream = string => {
     return result;
   };
 
-  stream.mapRegExp = (regexp, unMatchedIterator, matchedIterator) => {
+  const mapRegExp: MapRegExp = (
+    regexp: RegExp,
+    unMatchedIterator: MapUnMatch,
+    matchedIterator: MapMatch
+  ): (string[] | null)[] => {
     const result = [];
 
     const subString = string.slice(stringPosition, Infinity);
@@ -77,23 +93,36 @@ export const stringStream = string => {
     return result;
   };
 
-  stream.mapAllRegExp = (...args) => {
-    let result = [];
+  const mapAllRegExp: MapAllRegExp = (
+    regexp: RegExp,
+    unMatchedIterator: MapUnMatch,
+    matchedIterator: MapMatch
+  ): (string[] | null)[] => {
+    let result: (string[] | null)[] = [];
 
-    while (stream.hasMore()) {
-      result = [...result, ...stream.mapRegExp(...args)];
+    while (hasMore()) {
+      result = [
+        ...result,
+        ...mapRegExp(regexp, unMatchedIterator, matchedIterator)
+      ];
     }
 
     return result;
   };
 
-  stream.remainingLength = () => {
+  const remainingLength = (): number => {
     return stringLength - stringPosition;
   };
 
-  stream.hasMore = () => {
-    return stream.remainingLength() > 0;
+  const hasMore = (): boolean => {
+    return remainingLength() > 0;
   };
 
-  return stream;
+  return {
+    mapToken,
+    mapRegExp,
+    mapAllRegExp,
+    remainingLength,
+    hasMore
+  };
 };

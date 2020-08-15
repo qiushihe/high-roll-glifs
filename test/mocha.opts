@@ -1,4 +1,4 @@
---require @babel/register
+--require ./test/babel-register.js
 --require test/provider/assets-stub.provider.js
 --require test/provider/chai.provider.js
 --require test/provider/sinon.provider.js
