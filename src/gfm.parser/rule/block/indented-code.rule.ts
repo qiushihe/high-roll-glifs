@@ -1,11 +1,8 @@
 import last from "lodash/fp/last";
 
-import {
-  AdaptedStream,
-  ParseBlockRule,
-  ParsedBlock,
-  ParserState
-} from "../../type";
+import { AdaptedStream } from "../../stream/adapter";
+import { ParserState } from "../../parser";
+import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 
 const INDENTED_CODE_REGEXP = new RegExp("^\\s{4}(.+)$", "i");
 
@@ -31,7 +28,8 @@ const parse: ParseBlockRule = (
             indentedCode: {
               // TODO: Fill in this here
             }
-          }
+          },
+          inlineTokens: []
         };
       }
     } else {
@@ -42,7 +40,8 @@ const parse: ParseBlockRule = (
           indentedCode: {
             // TODO: Fill in this here
           }
-        }
+        },
+        inlineTokens: []
       };
     }
   } else {

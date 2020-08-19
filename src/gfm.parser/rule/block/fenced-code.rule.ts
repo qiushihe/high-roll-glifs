@@ -4,12 +4,9 @@ import isEmpty from "lodash/fp/isEmpty";
 import isNil from "lodash/fp/isNil";
 import last from "lodash/fp/last";
 
-import {
-  AdaptedStream,
-  ParseBlockRule,
-  ParsedBlock,
-  ParserState
-} from "../../type";
+import { AdaptedStream } from "../../stream/adapter";
+import { ParserState } from "../../parser";
+import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 
 const FENCED_CODE_FENCE_REGEXP = new RegExp(
   "^(\\s{0,3})(((`{3,})(\\s*[^`]*\\s*))|((~{3,})(\\s*[^~]*\\s*)))$",
@@ -72,7 +69,8 @@ const parse: ParseBlockRule = (
                 ...inProgressFencedCode,
                 isContinuable: false
               }
-            }
+            },
+            inlineTokens: []
           };
         }
         // ... but it's not an end fence for the in progress code block ...
@@ -86,7 +84,8 @@ const parse: ParseBlockRule = (
                 ...inProgressFencedCode,
                 isContinuable: true
               }
-            }
+            },
+            inlineTokens: []
           };
         }
       }
@@ -101,7 +100,8 @@ const parse: ParseBlockRule = (
               ...inProgressFencedCode,
               isContinuable: true
             }
-          }
+          },
+          inlineTokens: []
         };
       }
     }
@@ -117,7 +117,8 @@ const parse: ParseBlockRule = (
             fence: fenceCharacter,
             isContinuable: true
           }
-        }
+        },
+        inlineTokens: []
       };
     }
   } else {
@@ -138,7 +139,8 @@ const parse: ParseBlockRule = (
             lineContext: {
               raw: lineMatch[0],
               fencedCode: inProgressFencedCode
-            }
+            },
+            inlineTokens: []
           };
         } else {
           return null;

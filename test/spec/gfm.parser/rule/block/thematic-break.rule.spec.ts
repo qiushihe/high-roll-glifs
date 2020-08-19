@@ -3,12 +3,12 @@ import rule from "/src/gfm.parser/rule/block/thematic-break.rule";
 import {
   PASS,
   FAIL,
-  testAcceptance,
-  testProperties
+  testBlockAcceptance,
+  testBlockProperties
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / thematic-break.rule", () => {
-  testAcceptance(rule)([
+  testBlockAcceptance(rule)([
     [FAIL, "-"],
     [FAIL, "--"],
     [PASS, "---"],
@@ -45,14 +45,14 @@ describe("gfm.parser / rule / block / thematic-break.rule", () => {
     [FAIL, "-*_"]
   ]);
 
-  testProperties(rule)([
+  testBlockProperties(rule)([
     ["lineType", "thematic-break-line", "---"],
     ["lineContext.raw", "---", "---"],
     ["lineContext.raw", " ___", " ___"],
     ["lineContext.raw", "*** ", "*** "]
   ]);
 
-  testProperties(
+  testBlockProperties(
     rule,
     "lineContext.thematicBreak"
   )([

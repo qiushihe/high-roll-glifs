@@ -5,12 +5,9 @@ import isEmpty from "lodash/fp/isEmpty";
 import last from "lodash/fp/last";
 import size from "lodash/fp/size";
 
-import {
-  AdaptedStream,
-  ParseBlockRule,
-  ParsedBlock,
-  ParserState
-} from "../../type";
+import { AdaptedStream } from "../../stream/adapter";
+import { ParserState } from "../../parser";
+import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 
 const BULLET_LIST_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})([-+*])(\\s{0,4})(.*)$",
@@ -55,7 +52,8 @@ const parse: ParseBlockRule = (
                   type: "bullet",
                   leader: size(leader) + 1
                 }
-              }
+              },
+              inlineTokens: []
             };
           } else {
             return null;
@@ -69,7 +67,8 @@ const parse: ParseBlockRule = (
                 type: "bullet",
                 leader: size(leader) + 1
               }
-            }
+            },
+            inlineTokens: []
           };
         }
       } else {
@@ -84,7 +83,8 @@ const parse: ParseBlockRule = (
             type: "bullet",
             leader: size(leader)
           }
-        }
+        },
+        inlineTokens: []
       };
     }
   } else if (orderedLineMatch) {
@@ -107,7 +107,8 @@ const parse: ParseBlockRule = (
               type: "ordered",
               leader: size(leader) + 1
             }
-          }
+          },
+          inlineTokens: []
         };
       } else {
         return null;
@@ -122,7 +123,8 @@ const parse: ParseBlockRule = (
               type: "ordered",
               leader: size(leader)
             }
-          }
+          },
+          inlineTokens: []
         };
       } else {
         return null;
@@ -157,7 +159,8 @@ const parse: ParseBlockRule = (
                 lineContext: {
                   raw: unmarkedLineMatch[0],
                   list: previousList
-                }
+                },
+                inlineTokens: []
               };
             } else {
               if (flow([trim, negate(isEmpty)])(content)) {
@@ -166,7 +169,8 @@ const parse: ParseBlockRule = (
                   lineContext: {
                     raw: unmarkedLineMatch[0],
                     list: previousList
-                  }
+                  },
+                  inlineTokens: []
                 };
               } else {
                 return null;

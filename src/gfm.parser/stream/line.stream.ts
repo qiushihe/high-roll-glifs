@@ -1,6 +1,14 @@
-import { Stream } from "../type";
+export interface LineStream {
+  index: () => number;
+  position: () => number;
+  text: () => string | null;
+  next: () => void;
+  ended: () => boolean;
+  match: (regexp: RegExp, UNUSED_consume: boolean) => RegExpMatchArray | null;
+  lookAhead: (offset: number) => string | null;
+}
 
-export default (lines: string[]): Stream => {
+export default (lines: string[]): LineStream => {
   let lineIndex = 0;
 
   const index = (): number => lineIndex;

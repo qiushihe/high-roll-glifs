@@ -1,6 +1,7 @@
 import getOr from "lodash/fp/getOr";
 
-import { AdaptedStream, ParseBlockRule, ParsedBlock } from "../../type";
+import { AdaptedStream } from "../../stream/adapter";
+import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 
 const THEMATIC_BREAK_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})((-\\s*?){3,}|(_\\s*?){3,}|(\\*\\s*?){3,})(\\s*)$",
@@ -20,7 +21,8 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
           text: getOr("", 2)(lineMatch),
           suffix: getOr("", 6)(lineMatch)
         }
-      }
+      },
+      inlineTokens: []
     };
   } else {
     return null;

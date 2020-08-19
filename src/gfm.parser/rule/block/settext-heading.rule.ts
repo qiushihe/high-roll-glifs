@@ -1,15 +1,14 @@
 import last from "lodash/fp/last";
 import trim from "lodash/fp/trim";
 
-import {
-  AdaptedStream,
-  ParseBlockRule,
-  ParsedBlock,
-  ParserState
-} from "../../type";
+import { AdaptedStream, adaptString } from "../../stream/adapter";
+import { ParserState } from "../../parser";
 
-import { adaptString } from "../../stream/adapter";
-import { parseBlock } from "../../gfm.parser";
+import {
+  parse as parseBlock,
+  ParseBlockRule,
+  ParsedBlock
+} from "../../block.parser";
 
 const SETTEXT_HEADING_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})(([^\\s]\\s*?)+)(\\s*)$",
@@ -49,7 +48,8 @@ const parse: ParseBlockRule = (
               suffix: underlineMatch[5],
               level: trim(underlineMatch[2]).match(/=/) ? 1 : 2
             }
-          }
+          },
+          inlineTokens: []
         };
       } else {
         return null;
@@ -100,7 +100,8 @@ const parse: ParseBlockRule = (
             suffix: lineMatch[4],
             level: trim(offsetUnderlineMatch[2]).match(/=/) ? 1 : 2
           }
-        }
+        },
+        inlineTokens: []
       };
     } else {
       return null;

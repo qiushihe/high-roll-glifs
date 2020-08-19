@@ -2,58 +2,64 @@ import flow from "lodash/fp/flow";
 import constant from "lodash/fp/constant";
 import map from "lodash/fp/map";
 import join from "lodash/fp/join";
-import identity from "lodash/fp/identity";
 import flatten from "lodash/fp/flatten";
 
-import { stringStream } from "/src/util/stream.util";
+import { stringStream } from "/src/gfm.parser/stream/string.stream";
 
-describe("util / stream.util", () => {
-  describe("stringStream.mapToken", () => {
+describe("gfm.parser / stream / string.stream", () => {
+  describe("mapToken", () => {
     it("should map 0-length tokens", () => {
       const stream = stringStream("test");
-      const tokens = stream.mapToken(constant(null), constant("1"));
+      const tokens = stream.mapToken(constant(null));
 
-      expect(tokens.join("")).to.eq("");
+      expect(tokens).to.have.length(4);
+      expect(tokens[0]).to.have.length(0);
+      expect(tokens[1]).to.have.length(0);
+      expect(tokens[2]).to.have.length(0);
+      expect(tokens[3]).to.have.length(0);
       expect(stream.remainingLength()).to.eq(0);
     });
 
     it("should map 1-length tokens", () => {
-      const tokenizer = (string: string, index: number) => string[index];
       const stream = stringStream("test");
-      const tokens = stream.mapToken(tokenizer, constant("1"));
+      const tokens = stream.mapToken(constant([1, ["One"]]));
 
-      expect(tokens.join("")).to.eq("1111");
+      expect(flow([flatten, join("")])(tokens)).to.eq("OneOneOneOne");
       expect(stream.remainingLength()).to.eq(0);
     });
 
     it("should map >1-length tokens", () => {
-      const tokenizer = (string: string, index: number) => {
+      const tokenizer = (string: string, index: number): [number, string[]] => {
         if (
           string[index] === "o" &&
           string[index + 1] === "n" &&
           string[index + 2] === "e"
         ) {
-          return "111";
+          return [3, ["<1>"]];
         } else if (
           string[index] === "t" &&
-          string[index + 1] === "w" &&
-          string[index + 2] === "o"
+          string[index + 1] === "h" &&
+          string[index + 2] === "r" &&
+          string[index + 3] === "e" &&
+          string[index + 4] === "e"
         ) {
-          return "222";
+          return [5, ["<3>"]];
         } else {
-          return string[index];
+          return [1, [string[index]]];
         }
       };
 
-      const stream = stringStream("zero one two");
-      const tokens = stream.mapToken(tokenizer, identity);
+      const stream = stringStream("zero one two three");
+      const tokens = stream.mapToken(tokenizer);
 
-      expect(tokens.join("")).to.eq("zero 111 222");
+      expect(flow([flatten, join("")])(tokens)).to.eq(
+        "zero <1><1><1> two <3><3><3><3><3>"
+      );
       expect(stream.remainingLength()).to.eq(0);
     });
   });
 
-  describe("stringStream.mapRegExp", () => {
+  describe("mapRegExp", () => {
     it("should report empty string's remaining length", () => {
       expect(stringStream("").remainingLength()).to.eq(0);
     });
@@ -109,11 +115,11 @@ describe("util / stream.util", () => {
           new RegExp("`[^`]*`"),
           (character, index) => {
             nonMatchArgs = [...nonMatchArgs, [character, index]];
-            return null;
+            return [];
           },
           (character, index) => {
             matchArgs = [...matchArgs, [character, index]];
-            return null;
+            return [];
           }
         );
       }

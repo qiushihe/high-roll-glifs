@@ -1,6 +1,4 @@
-import find from "lodash/fp/find";
-
-import { BlockRule } from "../../type";
+import { ParseBlockRule } from "../../block.parser";
 
 import atxHeadingRule from "./atx-heading.rule";
 import settextHeadingRule from "./settext-heading.rule";
@@ -12,6 +10,11 @@ import thematicBreakRule from "./thematic-break.rule";
 import paragraphRule from "./paragraph.rule";
 import blankRule from "./blank.rule";
 import emptyRule from "./empty.rule";
+
+export interface BlockRule {
+  name: string;
+  parse: ParseBlockRule;
+}
 
 export const getRules = (): BlockRule[] => [
   fencedCodeRule,
@@ -25,12 +28,3 @@ export const getRules = (): BlockRule[] => [
   blankRule,
   emptyRule
 ];
-
-export const getRule = (name: string): BlockRule => {
-  const rule = find((rule: BlockRule) => rule.name === name)(getRules());
-  if (rule) {
-    return rule;
-  } else {
-    throw new Error(`Unable to find block rule: ${name}`);
-  }
-};

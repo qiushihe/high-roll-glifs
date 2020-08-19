@@ -1,22 +1,20 @@
 import rule from "/src/gfm.parser/rule/block/settext-heading.rule";
 
-import { LineState } from "/src/gfm.parser/type";
-
 import {
   PASS,
   FAIL,
-  testAcceptance,
-  testProperties
+  testBlockAcceptance,
+  testBlockProperties
 } from "/test/util/parser.util";
+import { LineState } from "/src/gfm.parser/parser";
 
 const ctx = (raw: string): LineState => ({
   type: "settext-heading-line",
-  context: { raw },
-  inline: { tokens: [], context: {} }
+  context: { raw }
 });
 
 describe("gfm.parser / rule / block / settext-heading.rule", () => {
-  testAcceptance(rule)([
+  testBlockAcceptance(rule)([
     [FAIL, "line"],
     [FAIL, "="],
     [FAIL, "-"],
@@ -26,13 +24,13 @@ describe("gfm.parser / rule / block / settext-heading.rule", () => {
     [PASS, "-", { previousLines: [ctx("heading 2")] }]
   ]);
 
-  testProperties(rule)([
+  testBlockProperties(rule)([
     ["lineType", "settext-heading-line", "heading 1\n="],
     ["lineContext.raw", "heading 1 ", "heading 1 \n="],
     ["lineContext.raw", " =", " =", { previousLines: [ctx("heading 1")] }]
   ]);
 
-  testProperties(
+  testBlockProperties(
     rule,
     "lineContext.settextHeading"
   )([

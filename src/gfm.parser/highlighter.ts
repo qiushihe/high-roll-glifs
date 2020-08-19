@@ -18,8 +18,8 @@ import { Extension } from "@codemirror/next/state";
 
 import { adaptStream } from "./stream/adapter";
 import lineStream from "./stream/line.stream";
-import { parse as gfmParse } from "./gfm.parser";
-import { ParserState } from "/src/gfm.parser/type";
+import { parse as parseBlock } from "./block.parser";
+import { ParserState } from "./parser";
 
 type DecorationIndex = { [key: string]: Decoration };
 type DecorationMapping = { [key: string]: string };
@@ -63,10 +63,16 @@ const INLINE_DECORATOR: DecorationIndex = flow([
       {}
     )(keys)
 ])({
-  "inline-syntax": "inline-syntax",
   "block-syntax": "block-syntax",
   "code-span": "code-span",
-  "link-span": "link-span"
+  "code-span-tick": "code-span-tick",
+  "link-span": "link-span",
+  "link-span-open": "link-span-open",
+  "link-span-close": "link-span-close",
+  "image-span": "image-span",
+  "image-span-open": "image-span-open",
+  "image-span-middle": "image-span-middle",
+  "image-span-close": "image-span-close"
 });
 
 class GfmDecorator {
@@ -100,28 +106,17 @@ class GfmDecorator {
     const stream = lineStream(viewportLines);
 
     while (!stream.ended()) {
-      const parseResult = gfmParse(adaptStream(stream), state);
+      const parseResult = parseBlock(adaptStream(stream), state);
 
       if (parseResult) {
-        const {
-          lineType,
-          lineContext,
-          inlineTokens,
-          inlineContext
-        } = parseResult;
+        const { lineType, lineContext, inlineTokens } = parseResult;
 
         const lineDecorator = LINE_DECORATOR[lineType];
         if (lineDecorator) {
           deco.push(lineDecorator.range(viewport.from + stream.position()));
         }
 
-        state.previousLines = [
-          {
-            type: lineType,
-            context: lineContext,
-            inline: { tokens: inlineTokens, context: inlineContext }
-          }
-        ];
+        state.previousLines = [{ type: lineType, context: lineContext }];
 
         for (
           let inlineIndex = 0;
@@ -166,14 +161,32 @@ const gfmTheme = EditorView.baseTheme({
   "md-block-syntax": {
     color: "#b0b0b0 !important"
   },
-  "md-inline-syntax": {
-    color: "#ff0000 !important"
-  },
   "md-code-span": {
     backgroundColor: "#e6e6e6"
   },
+  "md-code-span-tick": {
+    color: "#b0b0b0 !important"
+  },
   "md-link-span": {
     color: "#0000ff"
+  },
+  "md-link-span-open": {
+    color: "#b0b0b0 !important"
+  },
+  "md-link-span-close": {
+    color: "#b0b0b0 !important"
+  },
+  "md-image-span": {
+    color: "#0000ff"
+  },
+  "md-image-span-open": {
+    color: "#b0b0b0 !important"
+  },
+  "md-image-span-middle": {
+    color: "#b0b0b0 !important"
+  },
+  "md-image-span-close": {
+    color: "#b0b0b0 !important"
   }
 });
 

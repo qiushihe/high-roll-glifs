@@ -3,17 +3,17 @@ import rule from "/src/gfm.parser/rule/block/blank.rule";
 import {
   PASS,
   FAIL,
-  testAcceptance,
-  testProperties
+  testBlockAcceptance,
+  testBlockProperties
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / blank.rule", () => {
-  testAcceptance(rule)([
+  testBlockAcceptance(rule)([
     [FAIL, ""],
     [PASS, "   "]
   ]);
 
-  testProperties(rule)([
+  testBlockProperties(rule)([
     ["lineType", "blank-line", " "],
     ["lineContext.raw", " ", " "]
   ]);

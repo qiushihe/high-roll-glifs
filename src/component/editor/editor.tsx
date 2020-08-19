@@ -41,8 +41,7 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
 
   componentDidMount(): void {
     this.editorState = EditorState.create({
-      doc:
-        "one `two` three `four\nfive six` seven `eight nine\nten` <eleven> twelve\n\none one\ntwo two\n\nsettext 1\nsettext 2\nsettext 3\n---\n\nsettext 4\nsettext 5\nsettext 6\n===\n\n> quote 1\nquote 2\nquote 3\n\n> test 1\ntest 2\ntest 3\n---",
+      doc: "# test `test` test  ###  ",
       extensions: [
         lineNumbers(),
         history(),

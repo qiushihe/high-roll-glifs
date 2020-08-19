@@ -1,18 +1,21 @@
-import find from "lodash/fp/find";
+import { InlineTokenConflictMap, ParseInlineRule } from "../../inline.parser";
 
-import { InlineRule } from "../../type";
-
-import blockToken from "./block-token.rule";
 import codeSpan from "./code-span.rule";
 import autoLink from "./auto-link.rule";
+import imageSpan from "./image-span.rule";
 
-export const getRules = (): InlineRule[] => [blockToken, codeSpan, autoLink];
+export interface InlineRule {
+  name: string;
+  parse: ParseInlineRule;
+}
 
-export const getRule = (name: string): InlineRule => {
-  const rule = find((rule: InlineRule) => rule.name === name)(getRules());
-  if (rule) {
-    return rule;
-  } else {
-    throw new Error(`Unable to find inline rule: ${name}`);
+export const getRules = (): InlineRule[] => [codeSpan, autoLink, imageSpan];
+
+export const getConflictMap = (): InlineTokenConflictMap => ({
+  conflictor: {
+    "code-span": ["link-span"]
+  },
+  conflictee: {
+    "link-span": ["link-span-open", "link-span-close"]
   }
-};
+});

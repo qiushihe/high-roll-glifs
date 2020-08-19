@@ -3,12 +3,12 @@ import rule from "/src/gfm.parser/rule/block/atx-heading.rule";
 import {
   PASS,
   FAIL,
-  testAcceptance,
-  testProperties
+  testBlockAcceptance,
+  testBlockProperties
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / atx-heading.rule", () => {
-  testAcceptance(rule)([
+  testBlockAcceptance(rule)([
     [FAIL, "line"],
     [FAIL, "#line"],
     [PASS, "# heading 1"],
@@ -37,14 +37,14 @@ describe("gfm.parser / rule / block / atx-heading.rule", () => {
     [FAIL, "     #"]
   ]);
 
-  testProperties(rule)([
+  testBlockProperties(rule)([
     ["lineType", "atx-heading-line", "# Heading"],
     ["lineContext.raw", "# Heading", "# Heading"],
     ["lineContext.raw", " # Heading", " # Heading"],
     ["lineContext.raw", "# Heading ", "# Heading "]
   ]);
 
-  testProperties(
+  testBlockProperties(
     rule,
     "lineContext.atxHeading"
   )([

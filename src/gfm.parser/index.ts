@@ -1,2 +1,3 @@
-export { parse } from "./gfm.parser";
-export { default as highlighter } from "./gfm.highlighter";
+export { parse as parseBlock } from "./block.parser";
+export { parse as parseInline } from "./inline.parser";
+export { default as highlighter } from "./highlighter";

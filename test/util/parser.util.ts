@@ -5,18 +5,10 @@ import first from "lodash/fp/first";
 import isEmpty from "lodash/fp/isEmpty";
 import compact from "lodash/fp/compact";
 import join from "lodash/fp/join";
-import get from "lodash/fp/get";
-import map from "lodash/fp/map";
 
-import { sameItemsAs } from "/src/util/array.util";
-
-import {
-  AdaptedStream,
-  BlockRule,
-  InlineRule,
-  ParsedInline,
-  ParserState
-} from "/src/gfm.parser/type";
+import { AdaptedStream } from "/src/gfm.parser/stream/adapter";
+import { ParserState } from "/src/gfm.parser/parser";
+import { BlockRule } from "/src/gfm.parser/rule/block/rule";
 
 export const PASS = true;
 export const FAIL = false;
@@ -32,7 +24,7 @@ export const adaptLines = (text: string): AdaptedStream => {
   return { match, lookAhead };
 };
 
-export const testAcceptance = (rule: BlockRule) => (
+export const testBlockAcceptance = (rule: BlockRule) => (
   expectations: [boolean, string, ParserState?][]
 ): void => {
   forEach(([shouldPass, input, state = {}]) => {
@@ -55,7 +47,7 @@ export const testAcceptance = (rule: BlockRule) => (
   })(expectations);
 };
 
-export const testProperties = (rule: BlockRule, prefix = "") => (
+export const testBlockProperties = (rule: BlockRule, prefix = "") => (
   expectations: [string, unknown, string, ParserState?][]
 ): void => {
   const description = isEmpty(prefix)
@@ -74,55 +66,4 @@ export const testProperties = (rule: BlockRule, prefix = "") => (
       });
     })(expectations);
   });
-};
-
-type OutputGetter = (input: ParsedInline | null) => unknown;
-
-export const testOutput = (rule: InlineRule, getOutput: OutputGetter) => (
-  expectations: [string, unknown][]
-): void => {
-  forEach(([input, output]) => {
-    it(`should correctly parse ${JSON.stringify(input)}`, () => {
-      expect(
-        getOutput(
-          rule.parse(
-            {
-              type: "paragraph-line",
-              context: { raw: input },
-              inline: { tokens: [], context: {} }
-            },
-            {},
-            adaptLines(input)
-          )
-        )
-      ).to.eq(output);
-    });
-  })(expectations);
-};
-
-export const mapInlineTokens = (
-  tokenMappings: [string[], string][],
-  emptyString = "x",
-  separator = ""
-): OutputGetter => {
-  return flow([
-    get("inlineTokens"),
-    map((tokens: string[]) => {
-      if (isEmpty(tokens)) {
-        return emptyString;
-      } else {
-        for (let i = 0; i < tokenMappings.length; i++) {
-          const mapping = tokenMappings[i] as [string[], string];
-          const referenceItems = mapping[0];
-          const mappedString = mapping[1];
-
-          if (sameItemsAs(referenceItems)(tokens)) {
-            return mappedString;
-          }
-        }
-        return emptyString;
-      }
-    }),
-    join(separator)
-  ]);
 };

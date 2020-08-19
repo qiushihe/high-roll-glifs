@@ -2,45 +2,38 @@ import flow from "lodash/fp/flow";
 import size from "lodash/fp/size";
 import getOr from "lodash/fp/getOr";
 import cond from "lodash/fp/cond";
-import isNil from "lodash/fp/isNil";
-import isEmpty from "lodash/fp/isEmpty";
+import times from "lodash/fp/times";
 
-export type Tokenizer = (string: string, position: number) => string | null;
+export type Tokenizer = (
+  string: string,
+  position: number
+) => [number, string[]] | null;
 
-export type TokenMapper = (
-  token: string,
-  position: number,
-  string: string
-) => string | null;
-
-export type MapToken = (
-  tokenizer: Tokenizer,
-  iterator: TokenMapper
-) => (string | null)[];
+export type MapToken = (tokenizer: Tokenizer) => string[][];
 
 export type MapMatch = (
   character: string,
   position: number,
   match: RegExpMatchArray | null
-) => string[] | null;
+) => string[];
 
 export type MapUnMatch = (
   character: string,
   position: number,
   string: string
-) => string[] | null;
+) => string[];
 
 export type MapRegExp = (
   regexp: RegExp,
   unMatchedIterator: MapUnMatch,
   matchedIterator: MapMatch
-) => (string[] | null)[];
+) => string[][];
 
 export type MapAllRegExp = (
   regexp: RegExp,
   unMatchedIterator: MapUnMatch,
   matchedIterator: MapMatch
-) => (string[] | null)[];
+) => string[][];
 
 export interface StringStream {
   mapToken: MapToken;
@@ -54,27 +47,27 @@ export const stringStream = (string: string): StringStream => {
   const stringLength = size(string);
   let stringPosition = 0;
 
-  const mapToken: MapToken = (
-    tokenizer: Tokenizer,
-    iterator: TokenMapper
-  ): (string | null)[] => {
-    const result = [];
+  const mapToken: MapToken = (tokenizer: Tokenizer): string[][] => {
+    const result: string[][] = [];
 
     while (true) {
       if (stringPosition >= stringLength) {
         break;
       }
 
-      const token = tokenizer(string, stringPosition);
+      const tokenizerResult = tokenizer(string, stringPosition);
+      if (tokenizerResult) {
+        const [consumeLength, tokens] = tokenizerResult;
 
-      if (isNil(token) || isEmpty(token)) {
-        // The `tokenizer` should always return an non-empty token, however if for some reason the
-        // function does not return an non-empty token, treat it as if it returned a 1-length token
-        // in order to prevent the loop from stalling infinitely.
-        stringPosition += 1;
+        // The `tokenizer` function should return non-zero `consumeLength` at least some of the times
+        // otherwise the `while` loop will never end.
+        times(() => {
+          result.push(tokens);
+          stringPosition += 1;
+        })(consumeLength);
       } else {
-        result.push(iterator(token, stringPosition, string));
-        stringPosition += size(token);
+        result.push([]);
+        stringPosition += 1;
       }
     }
 
@@ -85,7 +78,7 @@ export const stringStream = (string: string): StringStream => {
     regexp: RegExp,
     unMatchedIterator: MapUnMatch,
     matchedIterator: MapMatch
-  ): (string[] | null)[] => {
+  ): string[][] => {
     const result = [];
 
     const subString = string.slice(stringPosition, Infinity);
@@ -131,8 +124,8 @@ export const stringStream = (string: string): StringStream => {
     regexp: RegExp,
     unMatchedIterator: MapUnMatch,
     matchedIterator: MapMatch
-  ): (string[] | null)[] => {
-    let result: (string[] | null)[] = [];
+  ): string[][] => {
+    let result: string[][] = [];
 
     while (hasMore()) {
       result = [
