@@ -4,7 +4,7 @@ import {
   PASS,
   FAIL,
   testBlockAcceptance,
-  testBlockProperties
+  testBlockProperties,
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / paragraph.rule", () => {
@@ -14,7 +14,7 @@ describe("gfm.parser / rule / block / paragraph.rule", () => {
     [PASS, "another word"],
     [PASS, "      some more words"],
     [PASS, "some more words      "],
-    [PASS, "      some more words      "]
+    [PASS, "      some more words      "],
   ]);
 
   testBlockProperties(rule)([
@@ -22,7 +22,7 @@ describe("gfm.parser / rule / block / paragraph.rule", () => {
     [
       "lineContext.raw",
       "   a paragraph line      ",
-      "   a paragraph line      "
-    ]
+      "   a paragraph line      ",
+    ],
   ]);
 });

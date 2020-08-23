@@ -247,7 +247,7 @@ export const createPromisedAction = (
 
   // Return a thunk'able function for all action functions created
   // by `createPromisedAction`.
-  return inputPayload => (dispatch, getState) => {
+  return (inputPayload) => (dispatch, getState) => {
     // Always return a promise for the action to ensure all action
     // dispatches are chain-able.
     return Promise.resolve().then(() => {
@@ -258,7 +258,7 @@ export const createPromisedAction = (
           // ... always return a promise to maintain the promise chain.
           return (
             Promise.resolve(createStructuredAction(inputPayload || {}))
-              .then(plainAction => ({
+              .then((plainAction) => ({
                 ...plainAction,
                 payload: flow([
                   // If the provided `payloadMutator` ...
@@ -267,15 +267,15 @@ export const createPromisedAction = (
                     [isFunction, identity],
                     // ... is not a function, then use `identity` (a function
                     // that simply returns its first argument) in the next step.
-                    [stubTrue, constant(identity)]
+                    [stubTrue, constant(identity)],
                   ]),
                   // Use the `mutate` function from the previous step to mutate
                   // the structured payload in the action.
-                  mutate => mutate(plainAction.payload)
-                ])(payloadMutator)
+                  (mutate) => mutate(plainAction.payload),
+                ])(payloadMutator),
               }))
               // After the action's payload is mutated (or not) ...
-              .then(action => {
+              .then((action) => {
                 // ... dispatch the action ...
                 dispatch(action);
                 // ... and also return the action object to other functions

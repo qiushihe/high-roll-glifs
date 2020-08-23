@@ -4,7 +4,7 @@ import {
   PASS,
   FAIL,
   testBlockAcceptance,
-  testBlockProperties
+  testBlockProperties,
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / atx-heading.rule", () => {
@@ -34,14 +34,14 @@ describe("gfm.parser / rule / block / atx-heading.rule", () => {
     [PASS, "  ####"],
     [PASS, "   ###"],
     [FAIL, "    ##"],
-    [FAIL, "     #"]
+    [FAIL, "     #"],
   ]);
 
   testBlockProperties(rule)([
     ["lineType", "atx-heading-line", "# Heading"],
     ["lineContext.raw", "# Heading", "# Heading"],
     ["lineContext.raw", " # Heading", " # Heading"],
-    ["lineContext.raw", "# Heading ", "# Heading "]
+    ["lineContext.raw", "# Heading ", "# Heading "],
   ]);
 
   testBlockProperties(
@@ -62,6 +62,6 @@ describe("gfm.parser / rule / block / atx-heading.rule", () => {
     ["suffix", "  #", "### Heading  #"],
     ["suffix", "  ##", "### Heading  ##"],
     ["suffix", "  ## ", "### Heading  ## "],
-    ["suffix", "  ##  ", "### Heading  ##  "]
+    ["suffix", "  ##  ", "### Heading  ##  "],
   ]);
 });

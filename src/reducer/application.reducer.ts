@@ -20,7 +20,7 @@ const initialState: ApplicationState = {};
 
 export default handleActions<ApplicationState, ApplicationPayload>(
   {
-    [BOOT]: withPayload(boot)
+    [BOOT]: withPayload(boot),
   },
   initialState
 );

@@ -7,7 +7,7 @@ import compact from "lodash/fp/compact";
 import join from "lodash/fp/join";
 
 import { AdaptedStream } from "/src/gfm.parser/stream/adapter";
-import { ParserState } from "/src/gfm.parser/parser";
+import { ParserState } from "/src/gfm.parser/parser/parser";
 import { BlockRule } from "/src/gfm.parser/rule/block/rule";
 
 export const PASS = true;
@@ -17,7 +17,7 @@ export const adaptLines = (text: string): AdaptedStream => {
   const lines = split("\n")(text);
 
   const match = (pattern: RegExp): RegExpMatchArray | null =>
-    flow([first, line => line.match(pattern)])(lines);
+    flow([first, (line) => line.match(pattern)])(lines);
 
   const lookAhead = (index: number): string | null => lines[index];
 

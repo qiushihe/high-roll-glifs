@@ -86,7 +86,7 @@
     "mocha": "^6.2.0",
     "node-hook": "^1.0.0",
     "nyc": "^14.1.1",
-    "prettier": "^1.18.2",
+    "prettier": "^2.0.5",
     "raw-loader": "^4.0.1",
     "sinon": "^7.3.2",
     "sinon-chai": "^3.3.0",

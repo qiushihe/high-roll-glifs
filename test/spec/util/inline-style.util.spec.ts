@@ -1,4 +1,4 @@
-import { recombobulator } from "/src/gfm.parser/inline.parser";
+import { recombobulator } from "/src/gfm.parser/parser/inline.parser";
 
 describe("util / inline-style.util", () => {
   describe("recombobulator", () => {
@@ -10,10 +10,10 @@ describe("util / inline-style.util", () => {
     it("should accept code-span over link-span", () => {
       const layer = recombobulator(5, {
         conflictor: { "code-span": ["link-span"] },
-        conflictee: {}
+        conflictee: {},
       })([
         [[], ["code-span"], ["code-span"], ["code-span"], []],
-        [["link-span"], ["link-span"], ["link-span"], [], []]
+        [["link-span"], ["link-span"], ["link-span"], [], []],
       ]);
 
       expect(layer).to.have.length(5);

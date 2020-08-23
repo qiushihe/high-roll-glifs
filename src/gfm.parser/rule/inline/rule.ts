@@ -1,4 +1,4 @@
-import { InlineTokenConflictMap, ParseInlineRule } from "../../inline.parser";
+import { InlineTokenConflictMap, ParseInlineRule } from "../../parser";
 
 import codeSpan from "./code-span.rule";
 import autoLink from "./auto-link.rule";
@@ -13,9 +13,9 @@ export const getRules = (): InlineRule[] => [codeSpan, autoLink, imageSpan];
 
 export const getConflictMap = (): InlineTokenConflictMap => ({
   conflictor: {
-    "code-span": ["link-span"]
+    "code-span": ["link-span"],
   },
   conflictee: {
-    "link-span": ["link-span-open", "link-span-close"]
-  }
+    "link-span": ["link-span-open", "link-span-close"],
+  },
 });

@@ -2,7 +2,7 @@ import size from "lodash/fp/size";
 import constant from "lodash/fp/constant";
 
 import { stringStream, MapMatch } from "../../stream/string.stream";
-import { ParseInlineRule } from "../../inline.parser";
+import { ParseInlineRule } from "../../parser";
 
 const IMAGE_SPAN_REGEXP = new RegExp('!\\[(.*)]\\((.*?)(\\s+"([^"]*)")?\\)');
 

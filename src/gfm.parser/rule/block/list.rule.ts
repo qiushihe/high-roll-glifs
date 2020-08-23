@@ -6,8 +6,7 @@ import last from "lodash/fp/last";
 import size from "lodash/fp/size";
 
 import { AdaptedStream } from "../../stream/adapter";
-import { ParserState } from "../../parser";
-import { ParseBlockRule, ParsedBlock } from "../../block.parser";
+import { ParserState, ParseBlockRule, ParsedBlock } from "../../parser";
 
 const BULLET_LIST_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})([-+*])(\\s{0,4})(.*)$",
@@ -50,10 +49,10 @@ const parse: ParseBlockRule = (
                 raw: bulletLineMatch[0],
                 list: {
                   type: "bullet",
-                  leader: size(leader) + 1
-                }
+                  leader: size(leader) + 1,
+                },
               },
-              inlineTokens: []
+              inlineTokens: [],
             };
           } else {
             return null;
@@ -65,10 +64,10 @@ const parse: ParseBlockRule = (
               raw: bulletLineMatch[0],
               list: {
                 type: "bullet",
-                leader: size(leader) + 1
-              }
+                leader: size(leader) + 1,
+              },
             },
-            inlineTokens: []
+            inlineTokens: [],
           };
         }
       } else {
@@ -81,10 +80,10 @@ const parse: ParseBlockRule = (
           raw: bulletLineMatch[0],
           list: {
             type: "bullet",
-            leader: size(leader)
-          }
+            leader: size(leader),
+          },
         },
-        inlineTokens: []
+        inlineTokens: [],
       };
     }
   } else if (orderedLineMatch) {
@@ -105,10 +104,10 @@ const parse: ParseBlockRule = (
             raw: orderedLineMatch[0],
             list: {
               type: "ordered",
-              leader: size(leader) + 1
-            }
+              leader: size(leader) + 1,
+            },
           },
-          inlineTokens: []
+          inlineTokens: [],
         };
       } else {
         return null;
@@ -121,10 +120,10 @@ const parse: ParseBlockRule = (
             raw: orderedLineMatch[0],
             list: {
               type: "ordered",
-              leader: size(leader)
-            }
+              leader: size(leader),
+            },
           },
-          inlineTokens: []
+          inlineTokens: [],
         };
       } else {
         return null;
@@ -147,7 +146,7 @@ const parse: ParseBlockRule = (
           const content = unmarkedLineMatch[2];
 
           const {
-            context: { list: previousList }
+            context: { list: previousList },
           } = previousLine;
 
           if (previousList) {
@@ -158,9 +157,9 @@ const parse: ParseBlockRule = (
                 lineType: previousLineType,
                 lineContext: {
                   raw: unmarkedLineMatch[0],
-                  list: previousList
+                  list: previousList,
                 },
-                inlineTokens: []
+                inlineTokens: [],
               };
             } else {
               if (flow([trim, negate(isEmpty)])(content)) {
@@ -168,9 +167,9 @@ const parse: ParseBlockRule = (
                   lineType: previousLineType,
                   lineContext: {
                     raw: unmarkedLineMatch[0],
-                    list: previousList
+                    list: previousList,
                   },
-                  inlineTokens: []
+                  inlineTokens: [],
                 };
               } else {
                 return null;

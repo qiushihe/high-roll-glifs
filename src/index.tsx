@@ -14,7 +14,7 @@ const store = createStore({});
 
 const withProviders = flowRight([
   withContainer(NormalizedStyleProvider, {}),
-  withContainer(ReduxStoreProvider, { store })
+  withContainer(ReduxStoreProvider, { store }),
 ]);
 
 class AppRoot extends React.PureComponent {

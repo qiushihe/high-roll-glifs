@@ -1,13 +1,13 @@
 import last from "lodash/fp/last";
 
 import { AdaptedStream, adaptString } from "../../stream/adapter";
-import { ParserState } from "../../parser";
 
 import {
-  parse as parseBlock,
+  ParserState,
+  parseBlock,
   ParseBlockRule,
-  ParsedBlock
-} from "../../block.parser";
+  ParsedBlock,
+} from "../../parser";
 
 const BLOCK_QUOTE_REGEXP = new RegExp("^(\\s{0,3}>\\s?)(.*)$", "i");
 
@@ -25,10 +25,10 @@ const parse: ParseBlockRule = (
         blockQuote: {
           // TODO: Fill in this here
           prefix: "__todo__",
-          text: "__todo__"
-        }
+          text: "__todo__",
+        },
       },
-      inlineTokens: []
+      inlineTokens: [],
     };
   } else {
     const previousLine = last(state.previousLines);
@@ -43,7 +43,7 @@ const parse: ParseBlockRule = (
         if (lineResult) {
           const {
             lineType,
-            lineContext: { raw }
+            lineContext: { raw },
           } = lineResult;
 
           if (lineType === "paragraph-line") {
@@ -54,10 +54,10 @@ const parse: ParseBlockRule = (
                 blockQuote: {
                   // TODO: Fill in this here
                   prefix: "__todo__",
-                  text: "__todo__"
-                }
+                  text: "__todo__",
+                },
               },
-              inlineTokens: []
+              inlineTokens: [],
             };
           } else {
             return null;

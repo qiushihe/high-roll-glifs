@@ -4,13 +4,13 @@ import {
   PASS,
   FAIL,
   testBlockAcceptance,
-  testBlockProperties
+  testBlockProperties,
 } from "/test/util/parser.util";
-import { LineState } from "/src/gfm.parser/parser";
+import { LineState } from "/src/gfm.parser/parser/parser";
 
 const ctx = (raw: string): LineState => ({
   type: "settext-heading-line",
-  context: { raw }
+  context: { raw },
 });
 
 describe("gfm.parser / rule / block / settext-heading.rule", () => {
@@ -21,13 +21,13 @@ describe("gfm.parser / rule / block / settext-heading.rule", () => {
     [PASS, "heading 1\n="],
     [PASS, "heading 2\n-"],
     [PASS, "=", { previousLines: [ctx("heading 1")] }],
-    [PASS, "-", { previousLines: [ctx("heading 2")] }]
+    [PASS, "-", { previousLines: [ctx("heading 2")] }],
   ]);
 
   testBlockProperties(rule)([
     ["lineType", "settext-heading-line", "heading 1\n="],
     ["lineContext.raw", "heading 1 ", "heading 1 \n="],
-    ["lineContext.raw", " =", " =", { previousLines: [ctx("heading 1")] }]
+    ["lineContext.raw", " =", " =", { previousLines: [ctx("heading 1")] }],
   ]);
 
   testBlockProperties(
@@ -61,6 +61,6 @@ describe("gfm.parser / rule / block / settext-heading.rule", () => {
     ["suffix", "  ", "-  ", { previousLines: [ctx("heading 2")] }],
     ["suffix", "   ", "-   ", { previousLines: [ctx("heading 2")] }],
     ["text", "===", " ===  ", { previousLines: [ctx("heading 1")] }],
-    ["text", "---", "  --- ", { previousLines: [ctx("heading 2")] }]
+    ["text", "---", "  --- ", { previousLines: [ctx("heading 2")] }],
   ]);
 });

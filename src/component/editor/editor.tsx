@@ -13,11 +13,11 @@ import { highlighter as gfmHighlighter } from "/src/gfm.parser";
 import { Base } from "./editor.style";
 
 const propTypes = {
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
 };
 
 const defaultProps = {
-  onChange: (): void => {}
+  onChange: (): void => {},
 };
 
 class Editor extends PureComponent<InferProps<typeof propTypes>> {
@@ -46,14 +46,14 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
         lineNumbers(),
         history(),
         gfmHighlighter(),
-        keymap([...defaultKeymap, ...historyKeymap])
-      ]
+        keymap([...defaultKeymap, ...historyKeymap]),
+      ],
     });
 
     if (this.rootRef.current) {
       this.editorView = new EditorView({
         state: this.editorState,
-        parent: this.rootRef.current
+        parent: this.rootRef.current,
       });
     }
   }

@@ -1,7 +1,7 @@
 import size from "lodash/fp/size";
 
-import { getRules as getBlockRules } from "./rule/block/rule";
-import { AdaptedStream } from "./stream/adapter";
+import { getRules as getBlockRules } from "../rule/block/rule";
+import { AdaptedStream } from "../stream/adapter";
 import { LineContext, ParserState } from "./parser";
 
 export interface ParsedBlock {

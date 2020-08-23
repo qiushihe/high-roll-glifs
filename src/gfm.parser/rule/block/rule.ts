@@ -1,4 +1,4 @@
-import { ParseBlockRule } from "../../block.parser";
+import { ParseBlockRule } from "../../parser";
 
 import atxHeadingRule from "./atx-heading.rule";
 import settextHeadingRule from "./settext-heading.rule";
@@ -26,5 +26,5 @@ export const getRules = (): BlockRule[] => [
   thematicBreakRule,
   paragraphRule,
   blankRule,
-  emptyRule
+  emptyRule,
 ];

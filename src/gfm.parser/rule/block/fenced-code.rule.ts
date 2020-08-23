@@ -5,8 +5,7 @@ import isNil from "lodash/fp/isNil";
 import last from "lodash/fp/last";
 
 import { AdaptedStream } from "../../stream/adapter";
-import { ParserState } from "../../parser";
-import { ParseBlockRule, ParsedBlock } from "../../block.parser";
+import { ParserState, ParseBlockRule, ParsedBlock } from "../../parser";
 
 const FENCED_CODE_FENCE_REGEXP = new RegExp(
   "^(\\s{0,3})(((`{3,})(\\s*[^`]*\\s*))|((~{3,})(\\s*[^~]*\\s*)))$",
@@ -37,7 +36,7 @@ const parse: ParseBlockRule = (
 
     if (previousLineType === "fenced-code-line") {
       const {
-        context: { fencedCode }
+        context: { fencedCode },
       } = previousLine;
       inProgressFencedCode = fencedCode;
     }
@@ -67,10 +66,10 @@ const parse: ParseBlockRule = (
               raw: fenceMatch[0],
               fencedCode: {
                 ...inProgressFencedCode,
-                isContinuable: false
-              }
+                isContinuable: false,
+              },
             },
-            inlineTokens: []
+            inlineTokens: [],
           };
         }
         // ... but it's not an end fence for the in progress code block ...
@@ -82,10 +81,10 @@ const parse: ParseBlockRule = (
               raw: fenceMatch[0],
               fencedCode: {
                 ...inProgressFencedCode,
-                isContinuable: true
-              }
+                isContinuable: true,
+              },
             },
-            inlineTokens: []
+            inlineTokens: [],
           };
         }
       }
@@ -98,10 +97,10 @@ const parse: ParseBlockRule = (
             raw: fenceMatch[0],
             fencedCode: {
               ...inProgressFencedCode,
-              isContinuable: true
-            }
+              isContinuable: true,
+            },
           },
-          inlineTokens: []
+          inlineTokens: [],
         };
       }
     }
@@ -115,10 +114,10 @@ const parse: ParseBlockRule = (
           fencedCode: {
             info: infoString,
             fence: fenceCharacter,
-            isContinuable: true
-          }
+            isContinuable: true,
+          },
         },
-        inlineTokens: []
+        inlineTokens: [],
       };
     }
   } else {
@@ -138,9 +137,9 @@ const parse: ParseBlockRule = (
             lineType: "fenced-code-line",
             lineContext: {
               raw: lineMatch[0],
-              fencedCode: inProgressFencedCode
+              fencedCode: inProgressFencedCode,
             },
-            inlineTokens: []
+            inlineTokens: [],
           };
         } else {
           return null;

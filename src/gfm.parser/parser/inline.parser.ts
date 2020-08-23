@@ -5,8 +5,8 @@ import intersection from "lodash/fp/intersection";
 import keys from "lodash/fp/keys";
 import without from "lodash/fp/without";
 
-import { AdaptedStream, adaptString } from "./stream/adapter";
-import { getRules as getInlineRules } from "./rule/inline/rule";
+import { AdaptedStream, adaptString } from "../stream/adapter";
+import { getRules as getInlineRules } from "../rule/inline/rule";
 
 import { parse as parseBlock } from "./block.parser";
 import { LineContext, ParserState } from "./parser";
@@ -70,7 +70,7 @@ export const collectLines = (
     }
 
     const block = parseBlock(adaptString(lookAheadText), {
-      previousLines: [{ type: lineType, context: lookAheadLineContext }]
+      previousLines: [{ type: lineType, context: lookAheadLineContext }],
     });
 
     if (block) {
@@ -118,18 +118,18 @@ export const recombobulator = (
       );
 
       // For each of those potentially conflicting inline tokens ...
-      conflictors.forEach(conflictor => {
+      conflictors.forEach((conflictor) => {
         // ... get the list of inline tokens that the inline token would conflict with.
         const conflictees = intersection(result[index])(
           conflictMap.conflictor[conflictor]
         );
 
         // For each conflicting inline token ...
-        conflictees.forEach(conflictee => {
+        conflictees.forEach((conflictee) => {
           // ... get all related conflicting inline tokens.
           const relatedConflictees = [
             conflictee,
-            ...conflictMap.conflictee[conflictee]
+            ...conflictMap.conflictee[conflictee],
           ];
 
           // Remove conflicting inline tokens from the current index.

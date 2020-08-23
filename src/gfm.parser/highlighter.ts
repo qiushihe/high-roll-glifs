@@ -11,15 +11,14 @@ import {
   ViewPlugin,
   EditorView,
   ViewUpdate,
-  Range
+  Range,
 } from "@codemirror/next/view";
 
 import { Extension } from "@codemirror/next/state";
 
 import { adaptStream } from "./stream/adapter";
 import lineStream from "./stream/line.stream";
-import { parse as parseBlock } from "./block.parser";
-import { ParserState } from "./parser";
+import { ParserState, parseBlock } from "./parser";
 
 type DecorationIndex = { [key: string]: Decoration };
 type DecorationMapping = { [key: string]: string };
@@ -31,11 +30,11 @@ const LINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.line({
-          attributes: { class: themeClass(`md-${mapping[key]}`) }
-        })
+          attributes: { class: themeClass(`md-${mapping[key]}`) },
+        }),
       }),
       {}
-    )(keys)
+    )(keys),
 ])({
   "atx-heading-line": "atx-heading",
   "settext-heading-line": "settext-heading",
@@ -47,7 +46,7 @@ const LINE_DECORATOR: DecorationIndex = flow([
   "indented-code-line": "indented-code",
   "thematic-break-line": "thematic-break",
   "blank-line": "blank",
-  "empty-line": "empty"
+  "empty-line": "empty",
 });
 
 const INLINE_DECORATOR: DecorationIndex = flow([
@@ -57,11 +56,11 @@ const INLINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.mark({
-          attributes: { class: themeClass(`md-${mapping[key]}`) }
-        })
+          attributes: { class: themeClass(`md-${mapping[key]}`) },
+        }),
       }),
       {}
-    )(keys)
+    )(keys),
 ])({
   "block-syntax": "block-syntax",
   "code-span": "code-span",
@@ -72,7 +71,7 @@ const INLINE_DECORATOR: DecorationIndex = flow([
   "image-span": "image-span",
   "image-span-open": "image-span-open",
   "image-span-middle": "image-span-middle",
-  "image-span-close": "image-span-close"
+  "image-span-close": "image-span-close",
 });
 
 class GfmDecorator {
@@ -153,41 +152,41 @@ const gfmDecorations = ViewPlugin.fromClass(GfmDecorator).decorations();
 
 const gfmTheme = EditorView.baseTheme({
   "test-line": {
-    color: "#ff0000"
+    color: "#ff0000",
   },
   "test-mark": {
-    color: "#ff0000"
+    color: "#ff0000",
   },
   "md-block-syntax": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-code-span": {
-    backgroundColor: "#e6e6e6"
+    backgroundColor: "#e6e6e6",
   },
   "md-code-span-tick": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-link-span": {
-    color: "#0000ff"
+    color: "#0000ff",
   },
   "md-link-span-open": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-link-span-close": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-image-span": {
-    color: "#0000ff"
+    color: "#0000ff",
   },
   "md-image-span-open": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-image-span-middle": {
-    color: "#b0b0b0 !important"
+    color: "#b0b0b0 !important",
   },
   "md-image-span-close": {
-    color: "#b0b0b0 !important"
-  }
+    color: "#b0b0b0 !important",
+  },
 });
 
 export default (): Extension[] => [gfmTheme, gfmDecorations];

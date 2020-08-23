@@ -1,7 +1,12 @@
 import { AdaptedStream } from "../../stream/adapter";
-import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 import { getConflictMap } from "../inline/rule";
-import { parse as parseInline, recombobulator } from "../../inline.parser";
+
+import {
+  ParseBlockRule,
+  ParsedBlock,
+  parseInline,
+  recombobulator,
+} from "../../parser";
 
 const ATX_HEADING_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})(#{1,6})((\\s)(.*?))?(\\s+#+\\s*)?$",
@@ -23,7 +28,7 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
 
     const lineContext = {
       raw: lineText,
-      atxHeading: { level, text, prefix, suffix }
+      atxHeading: { level, text, prefix, suffix },
     };
 
     const levelToken = `atx-heading-level-${level}`;
@@ -37,21 +42,21 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
         ...Array(level).fill([levelToken, "block-syntax"]),
         ...Array(space.length).fill([levelToken, "block-syntax"]),
         ...Array(text.length).fill([levelToken]),
-        ...Array(suffix.length).fill([levelToken, "block-syntax"])
+        ...Array(suffix.length).fill([levelToken, "block-syntax"]),
       ],
-      ...parseInline(text).map(layer => [
+      ...parseInline(text).map((layer) => [
         ...Array(prefix.length).fill([]),
         ...Array(level).fill([]),
         ...Array(space.length).fill([]),
         ...layer,
-        ...Array(suffix.length).fill([])
-      ])
+        ...Array(suffix.length).fill([]),
+      ]),
     ]);
 
     return {
       lineType,
       lineContext,
-      inlineTokens
+      inlineTokens,
     };
   } else {
     return null;

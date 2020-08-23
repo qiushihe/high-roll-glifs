@@ -8,7 +8,7 @@ import {
   List,
   Paragraph,
   SettextHeading,
-  ThematicBreak
+  ThematicBreak,
 } from "./block";
 
 export interface LineContext {

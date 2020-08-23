@@ -4,7 +4,7 @@ import {
   PASS,
   FAIL,
   testBlockAcceptance,
-  testBlockProperties
+  testBlockProperties,
 } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / thematic-break.rule", () => {
@@ -42,14 +42,14 @@ describe("gfm.parser / rule / block / thematic-break.rule", () => {
     [PASS, "* * * "],
     [PASS, " * * *"],
     [PASS, " * * * "],
-    [FAIL, "-*_"]
+    [FAIL, "-*_"],
   ]);
 
   testBlockProperties(rule)([
     ["lineType", "thematic-break-line", "---"],
     ["lineContext.raw", "---", "---"],
     ["lineContext.raw", " ___", " ___"],
-    ["lineContext.raw", "*** ", "*** "]
+    ["lineContext.raw", "*** ", "*** "],
   ]);
 
   testBlockProperties(
@@ -78,6 +78,6 @@ describe("gfm.parser / rule / block / thematic-break.rule", () => {
     ["suffix", "", "___"],
     ["suffix", " ", "___ "],
     ["suffix", "  ", "___  "],
-    ["suffix", "   ", "* * *   "]
+    ["suffix", "   ", "* * *   "],
   ]);
 });

@@ -1,5 +1,5 @@
 import { AdaptedStream } from "../../stream/adapter";
-import { ParseBlockRule, ParsedBlock } from "../../block.parser";
+import { ParseBlockRule, ParsedBlock } from "../../parser";
 
 const BLANK_LINE_REGEXP = new RegExp("^\\s+$", "i");
 
@@ -10,9 +10,9 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
     return {
       lineType: "blank-line",
       lineContext: {
-        raw: lineMatch[0]
+        raw: lineMatch[0],
       },
-      inlineTokens: []
+      inlineTokens: [],
     };
   } else {
     return null;

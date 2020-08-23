@@ -3,16 +3,18 @@ import size from "lodash/fp/size";
 import slice from "lodash/fp/slice";
 
 import { AdaptedStream } from "../../stream/adapter";
-import { LineContext, ParserState } from "../../parser";
-import { ParseBlockRule, ParsedBlock } from "../../block.parser";
 import { getConflictMap } from "../inline/rule";
 
 import {
-  parse as parseInline,
+  LineContext,
+  ParserState,
+  ParseBlockRule,
+  ParsedBlock,
+  parseInline,
   resumeTokens,
   collectLines,
-  recombobulator
-} from "../../inline.parser";
+  recombobulator,
+} from "../../parser";
 
 const PARAGRAPH_LINE_REGEXP = new RegExp("^(\\s*[^\\s]+\\s*)+$", "i");
 
@@ -34,7 +36,7 @@ const parse: ParseBlockRule = (
 
       combinedTokens = flow([
         parseInline,
-        recombobulator(combinedText.length, getConflictMap())
+        recombobulator(combinedText.length, getConflictMap()),
       ])(combinedText);
     }
 
