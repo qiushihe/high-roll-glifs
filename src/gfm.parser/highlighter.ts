@@ -98,7 +98,8 @@ class GfmDecorator {
 
     const viewportLines = [];
     for (let i = startLineNumber; i <= endLineNumber; i++) {
-      viewportLines.push(view.state.doc.line(i).slice());
+      const lineText = view.state.doc.line(i).slice();
+      viewportLines.push(lineText);
     }
 
     const state: ParserState = { previousLines: [] };
@@ -108,14 +109,26 @@ class GfmDecorator {
       const parseResult = parseBlock(adaptStream(stream), state);
 
       if (parseResult) {
-        const { lineType, lineContext, inlineTokens } = parseResult;
+        const {
+          lineType,
+          lineContext,
+          inlineTokens,
+          restInlineTokens,
+        } = parseResult;
 
         const lineDecorator = LINE_DECORATOR[lineType];
         if (lineDecorator) {
           deco.push(lineDecorator.range(viewport.from + stream.position()));
         }
 
-        state.previousLines = [{ type: lineType, context: lineContext }];
+        state.previousLines = [
+          {
+            type: lineType,
+            context: lineContext,
+            inlineTokens,
+            restInlineTokens,
+          },
+        ];
 
         for (
           let inlineIndex = 0;

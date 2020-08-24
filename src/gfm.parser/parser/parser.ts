@@ -1,35 +1,23 @@
-import {
-  AtxHeading,
-  Blank,
-  BlockQuote,
-  Empty,
-  FencedCode,
-  IndentedCode,
-  List,
-  Paragraph,
-  SettextHeading,
-  ThematicBreak,
-} from "./block";
-
-export interface LineContext {
-  raw: string;
-  atxHeading?: AtxHeading;
-  settextHeading?: SettextHeading;
-  blockQuote?: BlockQuote;
-  list?: List;
-  fencedCode?: FencedCode;
-  indentedCode?: IndentedCode;
-  thematicBreak?: ThematicBreak;
-  paragraph?: Paragraph;
-  blank?: Blank;
-  empty?: Empty;
-}
+import { LineContext } from "./line.context";
 
 export interface LineState {
   type: string;
   context: LineContext;
+  inlineTokens: string[][];
+  restInlineTokens: string[][];
+}
+
+export interface ParserStateContext {
+  skipInlineTokens?: boolean;
 }
 
 export interface ParserState {
+  context?: ParserStateContext;
   previousLines?: LineState[];
 }
+
+export const shouldParseInlineTokens = (state: ParserState): boolean => {
+  return state.context && state.context.skipInlineTokens
+    ? !state.context.skipInlineTokens
+    : true;
+};

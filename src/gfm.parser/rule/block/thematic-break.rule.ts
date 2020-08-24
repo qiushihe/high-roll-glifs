@@ -1,7 +1,5 @@
-import getOr from "lodash/fp/getOr";
-
 import { AdaptedStream } from "../../stream/adapter";
-import { ParseBlockRule, ParsedBlock } from "../../parser";
+import { ParseBlockRule, ParsedBlock, LineContextBuilder } from "../../parser";
 
 const THEMATIC_BREAK_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})((-\\s*?){3,}|(_\\s*?){3,}|(\\*\\s*?){3,})(\\s*)$",
@@ -9,20 +7,23 @@ const THEMATIC_BREAK_LINE_REGEXP = new RegExp(
 );
 
 const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
+  const lineType = "thematic-break-line";
   const lineMatch = stream.match(THEMATIC_BREAK_LINE_REGEXP);
 
   if (lineMatch) {
+    const lineText = lineMatch[0] || "";
+    const prefix = lineMatch[1] || "";
+    const text = lineMatch[2] || "";
+    const suffix = lineMatch[6] || "";
+    const lineContext = LineContextBuilder.new(lineText)
+      .thematicBreak(prefix, text, suffix)
+      .build();
+
     return {
-      lineType: "thematic-break-line",
-      lineContext: {
-        raw: lineMatch[0],
-        thematicBreak: {
-          prefix: getOr("", 1)(lineMatch),
-          text: getOr("", 2)(lineMatch),
-          suffix: getOr("", 6)(lineMatch),
-        },
-      },
+      lineType,
+      lineContext,
       inlineTokens: [],
+      restInlineTokens: [],
     };
   } else {
     return null;

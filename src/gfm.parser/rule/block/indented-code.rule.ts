@@ -1,7 +1,13 @@
 import last from "lodash/fp/last";
 
 import { AdaptedStream } from "../../stream/adapter";
-import { ParserState, ParseBlockRule, ParsedBlock } from "../../parser";
+
+import {
+  ParserState,
+  ParseBlockRule,
+  ParsedBlock,
+  LineContextBuilder,
+} from "../../parser";
 
 const INDENTED_CODE_REGEXP = new RegExp("^\\s{4}(.+)$", "i");
 
@@ -9,6 +15,7 @@ const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
 ): ParsedBlock | null => {
+  const lineType = "indented-code-line";
   const lineMatch = stream.match(INDENTED_CODE_REGEXP);
 
   if (lineMatch) {
@@ -20,27 +27,29 @@ const parse: ParseBlockRule = (
       if (previousLineType === "paragraph-line") {
         return null;
       } else {
+        const lineText = lineMatch[0] || "";
+        const lineContext = LineContextBuilder.new(lineText)
+          .indentedCode()
+          .build();
+
         return {
-          lineType: "indented-code-line",
-          lineContext: {
-            raw: lineMatch[0],
-            indentedCode: {
-              // TODO: Fill in this here
-            },
-          },
+          lineType,
+          lineContext,
           inlineTokens: [],
+          restInlineTokens: [],
         };
       }
     } else {
+      const lineText = lineMatch[0] || "";
+      const lineContext = LineContextBuilder.new(lineText)
+        .indentedCode()
+        .build();
+
       return {
-        lineType: "indented-code-line",
-        lineContext: {
-          raw: lineMatch[0],
-          indentedCode: {
-            // TODO: Fill in this here
-          },
-        },
+        lineType,
+        lineContext,
         inlineTokens: [],
+        restInlineTokens: [],
       };
     }
   } else {

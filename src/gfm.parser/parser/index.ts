@@ -11,4 +11,10 @@ export {
   recombobulator,
 } from "./inline.parser";
 
-export type { LineContext, LineState, ParserState } from "./parser";
+export type { LineState, ParserState } from "./parser";
+
+export { shouldParseInlineTokens } from "./parser";
+
+export type { LineContext } from "./line.context";
+
+export { LineContextBuilder } from "./line.context";

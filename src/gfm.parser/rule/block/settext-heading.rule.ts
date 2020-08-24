@@ -5,9 +5,10 @@ import { AdaptedStream, adaptString } from "../../stream/adapter";
 
 import {
   ParserState,
-  parseBlock,
   ParseBlockRule,
   ParsedBlock,
+  LineContextBuilder,
+  parseBlock,
 } from "../../parser";
 
 const SETTEXT_HEADING_LINE_REGEXP = new RegExp(
@@ -27,6 +28,7 @@ const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
 ): ParsedBlock | null => {
+  const lineType = "settext-heading-line";
   const underlineMatch = stream.match(SETTEXT_HEADING_UNDERLINE_REGEXP);
   const lineMatch = stream.match(SETTEXT_HEADING_LINE_REGEXP);
 
@@ -36,20 +38,21 @@ const parse: ParseBlockRule = (
     if (previousLine) {
       const { type: previousLineType } = previousLine;
 
-      if (previousLineType === "settext-heading-line") {
+      if (previousLineType === lineType) {
+        const lineText = underlineMatch[0] || "";
+        const prefix = underlineMatch[1] || "";
+        const text = underlineMatch[2] || "";
+        const suffix = underlineMatch[5] || "";
+        const level = trim(underlineMatch[2]).match(/=/) ? 1 : 2;
+        const lineContext = LineContextBuilder.new(lineText)
+          .settextHeading(prefix, text, suffix, level, true)
+          .build();
+
         return {
-          lineType: "settext-heading-line",
-          lineContext: {
-            raw: underlineMatch[0],
-            settextHeading: {
-              isUnderline: true,
-              text: underlineMatch[2],
-              prefix: underlineMatch[1],
-              suffix: underlineMatch[5],
-              level: trim(underlineMatch[2]).match(/=/) ? 1 : 2,
-            },
-          },
+          lineType,
+          lineContext,
           inlineTokens: [],
+          restInlineTokens: [],
         };
       } else {
         return null;
@@ -65,11 +68,12 @@ const parse: ParseBlockRule = (
       const offsetLine = stream.lookAhead(offset);
 
       if (offsetLine) {
-        const offsetLineResult = parseBlock(adaptString(offsetLine), {});
+        const offsetLineResult = parseBlock(adaptString(offsetLine), {
+          context: { skipInlineTokens: true },
+        });
 
         if (offsetLineResult) {
           const { lineType } = offsetLineResult;
-
           const match = offsetLine.match(SETTEXT_HEADING_UNDERLINE_REGEXP);
 
           if (match) {
@@ -89,19 +93,20 @@ const parse: ParseBlockRule = (
     }
 
     if (offsetUnderlineMatch) {
+      const lineText = lineMatch[0] || "";
+      const prefix = lineMatch[1] || "";
+      const text = lineMatch[2] || "";
+      const suffix = lineMatch[4] || "";
+      const level = trim(offsetUnderlineMatch[2]).match(/=/) ? 1 : 2;
+      const lineContext = LineContextBuilder.new(lineText)
+        .settextHeading(prefix, text, suffix, level, false)
+        .build();
+
       return {
-        lineType: "settext-heading-line",
-        lineContext: {
-          raw: lineMatch[0],
-          settextHeading: {
-            isUnderline: false,
-            text: lineMatch[2],
-            prefix: lineMatch[1],
-            suffix: lineMatch[4],
-            level: trim(offsetUnderlineMatch[2]).match(/=/) ? 1 : 2,
-          },
-        },
+        lineType,
+        lineContext,
         inlineTokens: [],
+        restInlineTokens: [],
       };
     } else {
       return null;

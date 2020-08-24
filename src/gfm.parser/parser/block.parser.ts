@@ -2,12 +2,14 @@ import size from "lodash/fp/size";
 
 import { getRules as getBlockRules } from "../rule/block/rule";
 import { AdaptedStream } from "../stream/adapter";
-import { LineContext, ParserState } from "./parser";
+import { ParserState } from "./parser";
+import { LineContext } from "./line.context";
 
 export interface ParsedBlock {
   lineType: string;
   lineContext: LineContext;
   inlineTokens: string[][];
+  restInlineTokens: string[][];
 }
 
 export type ParseBlockRule = (
@@ -24,6 +26,7 @@ export const parse: ParseBlockRule = (
   let lineType = null;
   let lineContext = null;
   let inlineTokens = null;
+  let restInlineTokens = null;
 
   // Apply block level parsing rules.
   for (let ruleIndex = 0; ruleIndex < size(blockRules); ruleIndex++) {
@@ -34,12 +37,13 @@ export const parse: ParseBlockRule = (
       lineType = blockRuleResult.lineType;
       lineContext = blockRuleResult.lineContext;
       inlineTokens = blockRuleResult.inlineTokens;
+      restInlineTokens = blockRuleResult.restInlineTokens;
       break;
     }
   }
 
-  if (lineType && lineContext && inlineTokens) {
-    return { lineType, lineContext, inlineTokens };
+  if (lineType && lineContext && inlineTokens && restInlineTokens) {
+    return { lineType, lineContext, inlineTokens, restInlineTokens };
   } else {
     return null;
   }

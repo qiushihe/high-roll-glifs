@@ -6,7 +6,13 @@ import last from "lodash/fp/last";
 import size from "lodash/fp/size";
 
 import { AdaptedStream } from "../../stream/adapter";
-import { ParserState, ParseBlockRule, ParsedBlock } from "../../parser";
+
+import {
+  ParserState,
+  ParseBlockRule,
+  ParsedBlock,
+  LineContextBuilder,
+} from "../../parser";
 
 const BULLET_LIST_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})([-+*])(\\s{0,4})(.*)$",
@@ -28,10 +34,12 @@ const parse: ParseBlockRule = (
   const orderedLineMatch = stream.match(ORDERED_LIST_LINE_REGEXP);
 
   if (bulletLineMatch) {
-    const prefix = bulletLineMatch[1];
-    const marker = bulletLineMatch[2];
-    const midfix = bulletLineMatch[3];
-    const content = bulletLineMatch[4];
+    const lineType = "bullet-list-line";
+    const lineText = bulletLineMatch[0] || "";
+    const prefix = bulletLineMatch[1] || "";
+    const marker = bulletLineMatch[2] || "";
+    const midfix = bulletLineMatch[3] || "";
+    const content = bulletLineMatch[4] || "";
 
     const leader = `${prefix}${marker}${midfix}`;
 
@@ -43,87 +51,84 @@ const parse: ParseBlockRule = (
           const { type: previousLineType } = previousLine;
 
           if (previousLineType !== "settext-heading-line") {
+            const lineContext = LineContextBuilder.new(lineText)
+              .list("bullet", size(leader) + 1)
+              .build();
+
             return {
-              lineType: "bullet-list-line",
-              lineContext: {
-                raw: bulletLineMatch[0],
-                list: {
-                  type: "bullet",
-                  leader: size(leader) + 1,
-                },
-              },
+              lineType,
+              lineContext,
               inlineTokens: [],
+              restInlineTokens: [],
             };
           } else {
             return null;
           }
         } else {
+          const lineContext = LineContextBuilder.new(lineText)
+            .list("bullet", size(leader) + 1)
+            .build();
+
           return {
-            lineType: "bullet-list-line",
-            lineContext: {
-              raw: bulletLineMatch[0],
-              list: {
-                type: "bullet",
-                leader: size(leader) + 1,
-              },
-            },
+            lineType,
+            lineContext,
             inlineTokens: [],
+            restInlineTokens: [],
           };
         }
       } else {
         return null;
       }
     } else {
+      const lineContext = LineContextBuilder.new(lineText)
+        .list("bullet", size(leader))
+        .build();
+
       return {
-        lineType: "bullet-list-line",
-        lineContext: {
-          raw: bulletLineMatch[0],
-          list: {
-            type: "bullet",
-            leader: size(leader),
-          },
-        },
+        lineType,
+        lineContext,
         inlineTokens: [],
+        restInlineTokens: [],
       };
     }
   } else if (orderedLineMatch) {
-    const prefix = orderedLineMatch[1];
-    const digits = orderedLineMatch[2];
-    const marker = orderedLineMatch[3];
-    const midfix = orderedLineMatch[4];
-    const content = orderedLineMatch[5];
+    const lineType = "ordered-list-line";
+    const lineText = orderedLineMatch[0] || "";
+    const prefix = orderedLineMatch[1] || "";
+    const digits = orderedLineMatch[2] || "";
+    const marker = orderedLineMatch[3] || "";
+    const midfix = orderedLineMatch[4] || "";
+    const content = orderedLineMatch[5] || "";
 
     const leader = `${prefix}${digits}${marker}${midfix}`;
     const number = parseInt(digits, 10);
 
     if (size(midfix) <= 0) {
       if (flow([trim, isEmpty])(content)) {
+        const lineContext = LineContextBuilder.new(lineText)
+          .list("ordered", size(leader) + 1)
+          .build();
+
         return {
-          lineType: "ordered-list-line",
-          lineContext: {
-            raw: orderedLineMatch[0],
-            list: {
-              type: "ordered",
-              leader: size(leader) + 1,
-            },
-          },
+          lineType,
+          lineContext,
           inlineTokens: [],
+          restInlineTokens: [],
         };
       } else {
         return null;
       }
     } else {
       if (number >= 0) {
+        const lineContext = LineContextBuilder.new(lineText)
+          .list("ordered", size(leader))
+          .build();
+
         return {
-          lineType: "ordered-list-line",
-          lineContext: {
-            raw: orderedLineMatch[0],
-            list: {
-              type: "ordered",
-              leader: size(leader),
-            },
-          },
+          lineType,
+          lineContext,
           inlineTokens: [],
+          restInlineTokens: [],
         };
       } else {
         return null;
@@ -133,43 +138,45 @@ const parse: ParseBlockRule = (
     const previousLine = last(state.previousLines);
 
     if (previousLine) {
-      const { type: previousLineType } = previousLine;
+      const { type: lineType } = previousLine;
 
-      if (
-        previousLineType === "bullet-list-line" ||
-        previousLineType === "ordered-list-line"
-      ) {
+      if (lineType === "bullet-list-line" || lineType === "ordered-list-line") {
         const unmarkedLineMatch = stream.match(UNMARKED_LIST_LINE_REGEXP);
 
         if (unmarkedLineMatch) {
-          const prefix = unmarkedLineMatch[1];
-          const content = unmarkedLineMatch[2];
+          const lineText = unmarkedLineMatch[0] || "";
+          const prefix = unmarkedLineMatch[1] || "";
+          const content = unmarkedLineMatch[2] || "";
 
           const {
             context: { list: previousList },
           } = previousLine;
 
           if (previousList) {
-            const { leader: previousLeader } = previousList;
+            const { type: previousType, leader: previousLeader } = previousList;
 
             if (size(prefix) >= previousLeader) {
+              const lineContext = LineContextBuilder.new(lineText)
+                .list(previousType, previousLeader)
+                .build();
+
               return {
-                lineType: previousLineType,
-                lineContext: {
-                  raw: unmarkedLineMatch[0],
-                  list: previousList,
-                },
+                lineType,
+                lineContext,
                 inlineTokens: [],
+                restInlineTokens: [],
               };
             } else {
               if (flow([trim, negate(isEmpty)])(content)) {
+                const lineContext = LineContextBuilder.new(lineText)
+                  .list(previousType, previousLeader)
+                  .build();
+
                 return {
-                  lineType: previousLineType,
-                  lineContext: {
-                    raw: unmarkedLineMatch[0],
-                    list: previousList,
-                  },
+                  lineType,
+                  lineContext,
                   inlineTokens: [],
+                  restInlineTokens: [],
                 };
               } else {
                 return null;

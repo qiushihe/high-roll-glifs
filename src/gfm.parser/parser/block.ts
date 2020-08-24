@@ -34,7 +34,7 @@ export interface List {
 }
 
 export interface Paragraph {
-  restTokens: string[][];
+  UNUSED_placeholderAttr?: unknown;
 }
 
 export interface SettextHeading {

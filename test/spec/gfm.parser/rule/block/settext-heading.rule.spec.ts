@@ -11,6 +11,8 @@ import { LineState } from "/src/gfm.parser/parser/parser";
 const ctx = (raw: string): LineState => ({
   type: "settext-heading-line",
   context: { raw },
+  inlineTokens: [],
+  restInlineTokens: [],
 });
 
 describe("gfm.parser / rule / block / settext-heading.rule", () => {

@@ -1,4 +1,3 @@
-import get from "lodash/fp/get";
 import last from "lodash/fp/last";
 import isNil from "lodash/fp/isNil";
 import intersection from "lodash/fp/intersection";
@@ -9,7 +8,8 @@ import { AdaptedStream, adaptString } from "../stream/adapter";
 import { getRules as getInlineRules } from "../rule/inline/rule";
 
 import { parse as parseBlock } from "./block.parser";
-import { LineContext, ParserState } from "./parser";
+import { ParserState } from "./parser";
+import { LineContext } from "./line.context";
 
 export type ParseInlineRule = (text: string) => string[][];
 
@@ -32,18 +32,14 @@ export const parse = (text: string): string[][][] => {
   return layers;
 };
 
-export const resumeTokens = (
-  state: ParserState,
-  contextNamespace: string
-): string[][] | null => {
+export const resumeTokens = (state: ParserState): string[][] | null => {
   const previousLine = last(state.previousLines);
 
   if (previousLine) {
-    const context = previousLine.context;
-    const restTokens = get(`${contextNamespace}.restTokens`)(context) || [];
+    const restInlineTokens = previousLine.restInlineTokens || [];
 
-    if (restTokens.length > 0) {
-      return restTokens;
+    if (restInlineTokens.length > 0) {
+      return restInlineTokens;
     } else {
       return null;
     }
@@ -70,7 +66,15 @@ export const collectLines = (
     }
 
     const block = parseBlock(adaptString(lookAheadText), {
-      previousLines: [{ type: lineType, context: lookAheadLineContext }],
+      context: { skipInlineTokens: true },
+      previousLines: [
+        {
+          type: lineType,
+          context: lookAheadLineContext,
+          inlineTokens: [],
+          restInlineTokens: [],
+        },
+      ],
     });
 
     if (block) {
