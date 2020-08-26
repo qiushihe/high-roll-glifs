@@ -14,8 +14,18 @@ export default (lines: string[]): LineStream => {
   const index = (): number => lineIndex;
 
   const position = (): number => {
-    const lengthBefore = lines.slice(0, lineIndex).join("\n").length;
-    return lengthBefore <= 0 ? 0 : lengthBefore + 1;
+    const linesBefore = lines.slice(0, lineIndex);
+
+    // If there is no line before the current line ...
+    if (linesBefore.length <= 0) {
+      // ... then the current line is the first line which means the stream's position is `0`.
+      return 0;
+    } else {
+      // If there are lines before the current line, then the stream's position is the number
+      // of characters before the current line plus `1`. The `+ 1` accounts for the linebreak
+      // character immediately precedes the current line.
+      return linesBefore.join("\n").length + 1;
+    }
   };
 
   const text = (): string | null => lines[lineIndex];
