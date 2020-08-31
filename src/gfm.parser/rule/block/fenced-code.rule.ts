@@ -1,175 +1,117 @@
-import flow from "lodash/fp/flow";
-import trim from "lodash/fp/trim";
-import isEmpty from "lodash/fp/isEmpty";
-import isNil from "lodash/fp/isNil";
-import last from "lodash/fp/last";
-
-import { AdaptedStream } from "../../stream/adapter";
-import { FencedCode } from "../../parser/block";
-
 import {
-  ParserState,
   ParseBlockRule,
   ParsedBlock,
+  LineContext,
   LineContextBuilder,
+  parseBlock
 } from "../../parser";
+
+import {
+  FENCED_CODE_LINE,
+  PARAGRAPH_LINE,
+  BLANK_LINE,
+  EMPTY_LINE
+} from "./lineType";
+
+import { AdaptedStream } from "../../stream/adapter";
 
 const FENCED_CODE_FENCE_REGEXP = new RegExp(
   "^(\\s{0,3})(((`{3,})(\\s*[^`]*\\s*))|((~{3,})(\\s*[^~]*\\s*)))$",
   "i"
 );
 
-const FENCED_CODE_LINE_REGEXP = new RegExp("^.*$", "i");
+const collectLines = (
+  lineContext: LineContext,
+  stream: AdaptedStream
+): string[] => {
+  const lines: string[] = [];
+  let foundClosingFence = false;
 
-const getInProgressFencedCode = (
-  state: ParserState,
-  lineType: string
-): FencedCode | null => {
-  const previousLine = last(state.previousLines);
-  if (previousLine && previousLine.type === lineType) {
-    return previousLine.context.fencedCode || null;
-  } else {
-    return null;
-  }
-};
+  let lookAheadOffset = 1;
 
-// TODO: Use `parseBlock` to only swallow:
-//       * paragraph-line
-//       * empty-line
-//       * blank-line
-//       ... and consult spec for more/less/whatnot.
+  while (true) {
+    const lookAheadStream = stream.slice(lookAheadOffset);
 
-// TODO: Add a `restLines` array into the state so we don't have to re-parse all the remaining
-//       lines for each remaining line.
-
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock | null => {
-  const lineType = "fenced-code-line";
-  const fenceMatch = stream.match(FENCED_CODE_FENCE_REGEXP);
-  const inProgressFencedCode = getInProgressFencedCode(state, lineType);
-
-  // If the current line matches a fence ...
-  if (fenceMatch) {
-    const lineText = fenceMatch[0] || "";
-    const fenceCharacter = (fenceMatch[4] || fenceMatch[7])[0] || "";
-    const infoString = fenceMatch[5] || fenceMatch[8] || "";
-
-    // ... and we're already in a code block ...
-    if (!isNil(inProgressFencedCode)) {
-      const {
-        info: inProgressInfo,
-        fence: inProgressFence,
-      } = inProgressFencedCode;
-
-      // End-fence differs from the start-fence in that it's not possible for the end-fence
-      // to have info string. So if we see a fence line without info string, then that fence
-      // line  **could be** a end-fence. We just have to check to make sure in later lines.
-      const couldBeEnd = flow([trim, isEmpty])(infoString);
-
-      // ... and the fence we just matched could be an end fence ...
-      if (couldBeEnd) {
-        // ... and it is an end fence for the in progress code block ...
-        if (fenceCharacter === inProgressFence) {
-          // ... then end the in progress code block.
-          const lineContext = LineContextBuilder.new(lineText)
-            .fencedCode(inProgressInfo, inProgressFence, false)
-            .build();
-
-          return {
-            lineType,
-            lineContext,
-            inlineTokens: [],
-            restInlineTokens: [],
-          };
-        }
-        // ... but it's not an end fence for the in progress code block ...
-        else {
-          // ... then continue the in progress code block.
-          const lineContext = LineContextBuilder.new(lineText)
-            .fencedCode(inProgressInfo, inProgressFence, true)
-            .build();
-
-          return {
-            lineType,
-            lineContext,
-            inlineTokens: [],
-            restInlineTokens: [],
-          };
-        }
-      }
-      // ... but the fence we just matched could not be an end fence ...
-      else {
-        // ... then continue the in progress code block.
-        const lineContext = LineContextBuilder.new(lineText)
-          .fencedCode(inProgressInfo, inProgressFence, true)
-          .build();
-
-        return {
-          lineType,
-          lineContext,
-          inlineTokens: [],
-          restInlineTokens: [],
-        };
-      }
+    if (lookAheadStream.ended()) {
+      break;
     }
-    // ... but we're not already in a code block ...
-    else {
-      // ... then start a code block.
-      const lineContext = LineContextBuilder.new(lineText)
-        .fencedCode(infoString, fenceCharacter, true)
-        .build();
 
-      return {
-        lineType,
-        lineContext,
-        inlineTokens: [],
-        restInlineTokens: [],
-      };
-    }
-  } else {
-    // If:
-    // * The current doesn't match a fence; AND ...
-    // * We are inside a fenced code block; AND ...
-    if (!isNil(inProgressFencedCode)) {
-      const {
-        info: inProgressInfo,
-        fence: inProgressFence,
-        isContinuable: inProgressIsContinuable,
-      } = inProgressFencedCode;
+    const blocks = parseBlock(lookAheadStream, {
+      context: { skipInlineTokens: true, skipContinuationLines: true }
+    });
 
-      // * The fenced code block has not ended ...
-      if (inProgressIsContinuable) {
-        // ... then consume any other line for the in-progress fenced code block.
-        const lineMatch = stream.match(FENCED_CODE_LINE_REGEXP);
+    if (blocks.length > 0) {
+      const block = blocks[blocks.length - 1];
+      const { lineType: blockLineType, lineContext: blockLineContext } = block;
 
-        if (lineMatch) {
-          const lineText = lineMatch[0] || "";
-          const lineContext = LineContextBuilder.new(lineText)
-            .fencedCode(
-              inProgressInfo,
-              inProgressFence,
-              inProgressIsContinuable
-            )
-            .build();
+      if (
+        blockLineType === PARAGRAPH_LINE ||
+        blockLineType === BLANK_LINE ||
+        blockLineType === EMPTY_LINE
+      ) {
+        lines.push(blockLineContext.raw);
+        lookAheadOffset += 1;
 
-          return {
-            lineType,
-            lineContext,
-            inlineTokens: [],
-            restInlineTokens: [],
-          };
-        } else {
-          return null;
+        if (blockLineContext.raw.match(FENCED_CODE_FENCE_REGEXP)) {
+          foundClosingFence = true;
+          break;
         }
       } else {
-        return null;
+        break;
       }
     } else {
-      return null;
+      break;
     }
   }
+
+  return foundClosingFence ? lines : [];
+};
+
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
+  const lineMatch = stream.match(FENCED_CODE_FENCE_REGEXP);
+
+  if (lineMatch) {
+    const lineMatchRaw = lineMatch[0] || "";
+    const lineMatchInfo = lineMatch[5] || lineMatch[8] || "";
+
+    // The collection of "rest lines" should not be predicated on calling
+    // the `shouldParseContinuationLines` function because the:
+    // * opening fence
+    // * code lines
+    // * closing fence
+    // ... collectively counts as a singular "fenced code block". This means they
+    // are not continuation lines and thus not controlled by the continuation lines
+    // parsing flag.
+    const restLines = collectLines(
+      LineContextBuilder.new(lineMatchRaw)
+        .fencedCode(lineMatchInfo, true, false)
+        .build(),
+      stream
+    );
+
+    if (restLines.length > 0) {
+      const rawLines = [lineMatchRaw, ...restLines];
+
+      for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
+        const lineText = rawLines[lineIndex];
+
+        blockTokens.push({
+          lineType: FENCED_CODE_LINE,
+          lineContext: LineContextBuilder.new(lineText)
+            .fencedCode(
+              lineMatchInfo,
+              lineIndex === 0,
+              lineIndex === rawLines.length - 1
+            )
+            .build(),
+          inlineTokens: []
+        });
+      }
+    }
+  }
+
+  return blockTokens;
 };
 
 export default { name: "fenced-code", parse };

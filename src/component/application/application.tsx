@@ -9,11 +9,11 @@ const Base = styled.div`
 `;
 
 const propTypes = {
-  onMount: PropTypes.func,
+  onMount: PropTypes.func
 };
 
 const defaultProps = {
-  onMount: (): void => {},
+  onMount: (): void => {}
 };
 
 class Application extends PureComponent<InferProps<typeof propTypes>> {
@@ -45,11 +45,11 @@ class Application extends PureComponent<InferProps<typeof propTypes>> {
 }
 
 Application.propTypes = {
-  onMount: PropTypes.func,
+  onMount: PropTypes.func
 };
 
 Application.defaultProps = {
-  onMount: () => {},
+  onMount: () => {}
 };
 
 export default Application;

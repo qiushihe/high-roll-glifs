@@ -20,8 +20,8 @@ export interface Empty {
 
 export interface FencedCode {
   info: string;
-  fence: string;
-  isContinuable: boolean;
+  isOpenFence: boolean;
+  isCloseFence: boolean;
 }
 
 export interface IndentedCode {

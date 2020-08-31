@@ -1,0 +1,11 @@
+export const ATX_HEADING_LINE = "atx-heading-line";
+export const SETTEXT_HEADING_LINE = "settext-heading-line";
+export const BLOCK_QUOTE_LINE = "block-quote-line";
+export const BULLET_LIST_LINE = "bullet-list-line";
+export const ORDERED_LIST_LINE = "ordered-list-line";
+export const FENCED_CODE_LINE = "fenced-code-line";
+export const INDENTED_CODE_LINE = "indented-code-line";
+export const THEMATIC_BREAK_LINE = "thematic-break-line";
+export const PARAGRAPH_LINE = "paragraph-line";
+export const BLANK_LINE = "blank-line";
+export const EMPTY_LINE = "empty-line";

@@ -1,27 +1,21 @@
-import constant from "lodash/fp/constant";
-
 export interface AdaptableStream {
+  ended: () => boolean;
   match: (pattern: RegExp, UNUSED_consume: boolean) => RegExpMatchArray | null;
-  lookAhead: (offset: number) => string | null;
+  slice: (from: number) => AdaptableStream;
 }
 
 export interface AdaptedStream {
+  ended: () => boolean;
   match: (pattern: RegExp) => RegExpMatchArray | null;
-  lookAhead: (offset: number) => string | null;
+  slice: (from: number) => AdaptedStream;
 }
 
 export const adaptStream = (stream: AdaptableStream): AdaptedStream => {
+  const ended = () => stream.ended();
+
   const match = (pattern: RegExp) => stream.match(pattern, false);
 
-  const lookAhead = (offset: number) => stream.lookAhead(offset);
+  const slice = (from: number) => adaptStream(stream.slice(from));
 
-  return { match, lookAhead };
-};
-
-export const adaptString = (string: string): AdaptedStream => {
-  const match = (pattern: RegExp) => string.match(pattern);
-
-  const lookAhead = constant(null);
-
-  return { match, lookAhead };
+  return { ended, match, slice };
 };

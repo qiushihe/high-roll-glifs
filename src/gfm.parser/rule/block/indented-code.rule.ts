@@ -1,60 +1,87 @@
-import last from "lodash/fp/last";
-
-import { AdaptedStream } from "../../stream/adapter";
-
 import {
   ParserState,
   ParseBlockRule,
   ParsedBlock,
+  LineContext,
   LineContextBuilder,
+  parseBlock,
+  shouldParseContinuationLines
 } from "../../parser";
 
+import { INDENTED_CODE_LINE } from "./lineType";
+import { AdaptedStream } from "../../stream/adapter";
+
 const INDENTED_CODE_REGEXP = new RegExp("^\\s{4}(.+)$", "i");
+
+const collectLines = (
+  lineContext: LineContext,
+  stream: AdaptedStream
+): string[] => {
+  const lines: string[] = [];
+
+  let lookAheadOffset = 1;
+
+  while (true) {
+    const lookAheadStream = stream.slice(lookAheadOffset);
+
+    if (lookAheadStream.ended()) {
+      break;
+    }
+
+    const blocks = parseBlock(lookAheadStream, {
+      context: { skipInlineTokens: true, skipContinuationLines: true }
+    });
+
+    if (blocks.length > 0) {
+      const block = blocks[blocks.length - 1];
+      const { lineType: blockLineType, lineContext: blockLineContext } = block;
+
+      if (blockLineType === INDENTED_CODE_LINE) {
+        lines.push(blockLineContext.raw);
+
+        lookAheadOffset += 1;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return lines;
+};
 
 const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
-): ParsedBlock | null => {
-  const lineType = "indented-code-line";
+): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
   const lineMatch = stream.match(INDENTED_CODE_REGEXP);
 
   if (lineMatch) {
-    const previousLine = last(state.previousLines);
+    const lineMatchRaw = lineMatch[0] || "";
 
-    if (previousLine) {
-      const { type: previousLineType } = previousLine;
+    const restLines = shouldParseContinuationLines(state)
+      ? collectLines(
+          LineContextBuilder.new(lineMatchRaw).indentedCode().build(),
+          stream
+        )
+      : [];
 
-      if (previousLineType === "paragraph-line") {
-        return null;
-      } else {
-        const lineText = lineMatch[0] || "";
-        const lineContext = LineContextBuilder.new(lineText)
-          .indentedCode()
-          .build();
+    const rawLines = [lineMatchRaw, ...restLines];
 
-        return {
-          lineType,
-          lineContext,
-          inlineTokens: [],
-          restInlineTokens: [],
-        };
-      }
-    } else {
-      const lineText = lineMatch[0] || "";
-      const lineContext = LineContextBuilder.new(lineText)
-        .indentedCode()
-        .build();
+    for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
+      const lineText = rawLines[lineIndex];
 
-      return {
-        lineType,
-        lineContext,
-        inlineTokens: [],
-        restInlineTokens: [],
-      };
+      blockTokens.push({
+        lineType: INDENTED_CODE_LINE,
+        lineContext: LineContextBuilder.new(lineText).indentedCode().build(),
+        inlineTokens: []
+      });
     }
-  } else {
-    return null;
   }
+
+  return blockTokens;
 };
 
 export default { name: "indented-code", parse };

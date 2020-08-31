@@ -19,12 +19,12 @@ const GlobalStyle = createGlobalStyle`
 const propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.node,
-    PropTypes.arrayOf(PropTypes.node),
-  ]),
+    PropTypes.arrayOf(PropTypes.node)
+  ])
 };
 
 const defaultProps = {
-  children: null,
+  children: null
 };
 
 export class NormalizedStyleProvider extends PureComponent<

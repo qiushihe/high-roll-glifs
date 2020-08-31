@@ -6,7 +6,7 @@ import {
   CombinedState,
   Store,
   StoreEnhancer,
-  StoreEnhancerStoreCreator,
+  StoreEnhancerStoreCreator
 } from "redux";
 
 import rootReducer from "/src/reducer";

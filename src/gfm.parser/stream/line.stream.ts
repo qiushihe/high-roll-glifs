@@ -5,10 +5,10 @@ export interface LineStream {
   next: () => void;
   ended: () => boolean;
   match: (regexp: RegExp, UNUSED_consume: boolean) => RegExpMatchArray | null;
-  lookAhead: (offset: number) => string | null;
+  slice: (from: number) => LineStream;
 }
 
-export default (lines: string[]): LineStream => {
+const lineStream = (lines: string[]): LineStream => {
   let lineIndex = 0;
 
   const index = (): number => lineIndex;
@@ -41,8 +41,10 @@ export default (lines: string[]): LineStream => {
     return line === null || line === undefined ? null : line.match(regexp);
   };
 
-  const lookAhead = (offset: number): string | null =>
-    lines[lineIndex + offset];
+  const slice = (from: number): LineStream =>
+    lineStream(lines.slice(lineIndex + from));
 
-  return { index, position, text, next, ended, match, lookAhead };
+  return { index, position, text, next, ended, match, slice };
 };
+
+export default lineStream;

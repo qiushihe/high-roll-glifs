@@ -3,12 +3,11 @@ import forEach from "lodash/fp/forEach";
 import split from "lodash/fp/split";
 import first from "lodash/fp/first";
 import isEmpty from "lodash/fp/isEmpty";
-import compact from "lodash/fp/compact";
-import join from "lodash/fp/join";
 
 import { AdaptedStream } from "/src/gfm.parser/stream/adapter";
 import { ParserState } from "/src/gfm.parser/parser/parser";
 import { BlockRule } from "/src/gfm.parser/rule/block/rule";
+import constant from "lodash/fp/constant";
 
 export const PASS = true;
 export const FAIL = false;
@@ -16,12 +15,14 @@ export const FAIL = false;
 export const adaptLines = (text: string): AdaptedStream => {
   const lines = split("\n")(text);
 
+  const ended = constant(lines.length <= 0);
+
   const match = (pattern: RegExp): RegExpMatchArray | null =>
     flow([first, (line) => line.match(pattern)])(lines);
 
-  const lookAhead = (index: number): string | null => lines[index];
+  const slice = (from: number) => adaptLines(lines.slice(from).join("\n"));
 
-  return { match, lookAhead };
+  return { ended, match, slice };
 };
 
 export const testBlockAcceptance = (rule: BlockRule) => (
@@ -35,35 +36,14 @@ export const testBlockAcceptance = (rule: BlockRule) => (
 
     if (shouldPass) {
       it(`should accept ${JSON.stringify(input)}${stateDescription}`, () => {
-        expect(result).to.not.be.null;
+        expect(result).to.not.be.empty;
       });
     } else {
       it(`should not accept ${JSON.stringify(
         input
       )}${stateDescription}`, () => {
-        expect(result).to.be.null;
+        expect(result).to.be.empty;
       });
     }
   })(expectations);
-};
-
-export const testBlockProperties = (rule: BlockRule, prefix = "") => (
-  expectations: [string, unknown, string, ParserState?][]
-): void => {
-  const description = isEmpty(prefix)
-    ? "result attributes"
-    : `result ${prefix}.* attributes`;
-
-  describe(description, () => {
-    forEach(([name, expected, input, state = {}]) => {
-      it(`${JSON.stringify(input)} should produce \`${name}\`: ${JSON.stringify(
-        expected
-      )}`, () => {
-        expect(rule.parse(adaptLines(input), state)).to.have.nested.property(
-          flow([compact, join(".")])([prefix, name]),
-          expected
-        );
-      });
-    })(expectations);
-  });
 };

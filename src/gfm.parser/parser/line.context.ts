@@ -10,7 +10,7 @@ import {
   List,
   Paragraph,
   SettextHeading,
-  ThematicBreak,
+  ThematicBreak
 } from "./block";
 
 export interface LineContext {
@@ -66,7 +66,7 @@ export class LineContextBuilder {
       text,
       suffix,
       level,
-      isUnderline,
+      isUnderline
     });
     return this;
   }
@@ -85,11 +85,11 @@ export class LineContextBuilder {
 
   public fencedCode(
     info: string,
-    fence: string,
-    isContinuable: boolean
+    isOpenFence: boolean,
+    isCloseFence: boolean
   ): LineContextBuilder {
     this.namespace = "fencedCode";
-    this.values = identity<FencedCode>({ info, fence, isContinuable });
+    this.values = identity<FencedCode>({ info, isOpenFence, isCloseFence });
     return this;
   }
 
@@ -134,7 +134,7 @@ export class LineContextBuilder {
 
     return {
       raw: this.raw,
-      [this.namespace]: this.values,
+      [this.namespace]: this.values
     };
   }
 }

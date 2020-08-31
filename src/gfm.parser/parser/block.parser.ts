@@ -9,42 +9,30 @@ export interface ParsedBlock {
   lineType: string;
   lineContext: LineContext;
   inlineTokens: string[][];
-  restInlineTokens: string[][];
 }
 
 export type ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
-) => ParsedBlock | null;
+) => ParsedBlock[];
 
 export const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
-): ParsedBlock | null => {
+): ParsedBlock[] => {
   const blockRules = getBlockRules();
-
-  let lineType = null;
-  let lineContext = null;
-  let inlineTokens = null;
-  let restInlineTokens = null;
+  const blocks: ParsedBlock[] = [];
 
   // Apply block level parsing rules.
   for (let ruleIndex = 0; ruleIndex < size(blockRules); ruleIndex++) {
     const blockRule = blockRules[ruleIndex];
-    const blockRuleResult = blockRule.parse(stream, state);
+    const ruleBlocks = blockRule.parse(stream, state);
 
-    if (blockRuleResult) {
-      lineType = blockRuleResult.lineType;
-      lineContext = blockRuleResult.lineContext;
-      inlineTokens = blockRuleResult.inlineTokens;
-      restInlineTokens = blockRuleResult.restInlineTokens;
+    if (ruleBlocks.length > 0) {
+      blocks.push(...ruleBlocks);
       break;
     }
   }
 
-  if (lineType && lineContext && inlineTokens && restInlineTokens) {
-    return { lineType, lineContext, inlineTokens, restInlineTokens };
-  } else {
-    return null;
-  }
+  return blocks;
 };

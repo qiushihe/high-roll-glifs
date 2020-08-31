@@ -1,63 +1,88 @@
-import flow from "lodash/fp/flow";
-import size from "lodash/fp/size";
-import slice from "lodash/fp/slice";
-
-import { AdaptedStream } from "../../stream/adapter";
-import { getConflictMap } from "../inline/rule";
-
 import {
   ParseBlockRule,
   ParsedBlock,
   ParserState,
+  LineContext,
   LineContextBuilder,
-  parseInline,
-  collectLines,
-  resumeTokens,
-  recombobulator,
-  shouldParseInlineTokens,
+  parseInlineLines,
+  shouldParseContinuationLines,
+  shouldParseInlineTokens
 } from "../../parser";
 
+import { PARAGRAPH_LINE } from "./lineType";
+import { AdaptedStream } from "../../stream/adapter";
+import { parse as parseBlock } from "../../parser/block.parser";
+
 const PARAGRAPH_LINE_REGEXP = new RegExp("^(\\s*[^\\s]+\\s*)+$", "i");
+
+const collectLines = (lineContext: LineContext, stream: AdaptedStream) => {
+  const lines: string[] = [];
+
+  let lookAheadOffset = 1;
+
+  while (true) {
+    const lookAheadStream = stream.slice(lookAheadOffset);
+
+    if (lookAheadStream.ended()) {
+      break;
+    }
+
+    const blocks = parseBlock(lookAheadStream, {
+      context: { skipInlineTokens: true, skipContinuationLines: true }
+    });
+
+    if (blocks.length > 0) {
+      const block = blocks[blocks.length - 1];
+      const { lineType: blockLineType, lineContext: blockLineContext } = block;
+
+      if (blockLineType === PARAGRAPH_LINE) {
+        lines.push(blockLineContext.raw);
+        lookAheadOffset += 1;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return lines;
+};
 
 const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
-): ParsedBlock | null => {
-  const lineType = "paragraph-line";
+): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
   const lineMatch = stream.match(PARAGRAPH_LINE_REGEXP);
 
   if (lineMatch) {
-    const lineText = lineMatch[0];
-    const lineContext = LineContextBuilder.new(lineText).paragraph().build();
+    const lineMatchRaw = lineMatch[0] || "";
+    const restLines = shouldParseContinuationLines(state)
+      ? collectLines(
+          LineContextBuilder.new(lineMatchRaw).paragraph().build(),
+          stream
+        )
+      : [];
 
-    let inlineTokens: string[][] = [];
-    let restInlineTokens: string[][] = [];
+    const rawLines = [lineMatchRaw, ...restLines];
 
-    if (shouldParseInlineTokens(state)) {
-      let combinedTokens = resumeTokens(state);
-      if (!combinedTokens) {
-        const combinedLines = collectLines(stream, lineType, lineContext);
-        const combinedText = combinedLines.join(" ");
+    const inlineTokens: string[][][] = shouldParseInlineTokens(state)
+      ? parseInlineLines(rawLines)
+      : [];
 
-        combinedTokens = flow([
-          parseInline,
-          recombobulator(combinedText.length, getConflictMap()),
-        ])(combinedText);
-      }
+    for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
+      const lineText = rawLines[lineIndex];
 
-      inlineTokens = slice(0, lineText.length)(combinedTokens);
-
-      // The `+ 1` is to get rid of the space (i.e. the linebreak) as well.
-      restInlineTokens = slice(
-        lineText.length + 1,
-        size(combinedTokens)
-      )(combinedTokens);
+      blockTokens.push({
+        lineType: PARAGRAPH_LINE,
+        lineContext: LineContextBuilder.new(lineText).paragraph().build(),
+        inlineTokens: inlineTokens[lineIndex]
+      });
     }
-
-    return { lineType, lineContext, inlineTokens, restInlineTokens };
-  } else {
-    return null;
   }
+
+  return blockTokens;
 };
 
 export default { name: "paragraph", parse };

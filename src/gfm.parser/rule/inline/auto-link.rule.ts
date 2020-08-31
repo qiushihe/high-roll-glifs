@@ -14,7 +14,7 @@ const handleUnmatched = constant([]);
 const handleMatched = cond([
   [eq("<"), constant(["link-span", "link-span-open"])],
   [eq(">"), constant(["link-span", "link-span-close"])],
-  [stubTrue, constant(["link-span"])],
+  [stubTrue, constant(["link-span"])]
 ]);
 
 const parse: ParseInlineRule = (text: string): string[][] => {

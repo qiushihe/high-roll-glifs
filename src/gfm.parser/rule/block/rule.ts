@@ -26,5 +26,5 @@ export const getRules = (): BlockRule[] => [
   thematicBreakRule,
   paragraphRule,
   blankRule,
-  emptyRule,
+  emptyRule
 ];

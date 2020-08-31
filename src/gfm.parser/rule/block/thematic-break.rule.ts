@@ -1,3 +1,4 @@
+import { THEMATIC_BREAK_LINE } from "./lineType";
 import { AdaptedStream } from "../../stream/adapter";
 import { ParseBlockRule, ParsedBlock, LineContextBuilder } from "../../parser";
 
@@ -6,8 +7,8 @@ const THEMATIC_BREAK_LINE_REGEXP = new RegExp(
   "i"
 );
 
-const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
-  const lineType = "thematic-break-line";
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
   const lineMatch = stream.match(THEMATIC_BREAK_LINE_REGEXP);
 
   if (lineMatch) {
@@ -19,15 +20,14 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock | null => {
       .thematicBreak(prefix, text, suffix)
       .build();
 
-    return {
-      lineType,
+    blockTokens.push({
+      lineType: THEMATIC_BREAK_LINE,
       lineContext,
-      inlineTokens: [],
-      restInlineTokens: [],
-    };
-  } else {
-    return null;
+      inlineTokens: []
+    });
   }
+
+  return blockTokens;
 };
 
 export default { name: "thematic-break", parse };

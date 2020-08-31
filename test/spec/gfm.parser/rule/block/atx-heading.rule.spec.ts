@@ -1,11 +1,6 @@
 import rule from "/src/gfm.parser/rule/block/atx-heading.rule";
 
-import {
-  PASS,
-  FAIL,
-  testBlockAcceptance,
-  testBlockProperties,
-} from "/test/util/parser.util";
+import { PASS, FAIL, testBlockAcceptance } from "/test/util/parser.util";
 
 describe("gfm.parser / rule / block / atx-heading.rule", () => {
   testBlockAcceptance(rule)([
@@ -34,34 +29,6 @@ describe("gfm.parser / rule / block / atx-heading.rule", () => {
     [PASS, "  ####"],
     [PASS, "   ###"],
     [FAIL, "    ##"],
-    [FAIL, "     #"],
-  ]);
-
-  testBlockProperties(rule)([
-    ["lineType", "atx-heading-line", "# Heading"],
-    ["lineContext.raw", "# Heading", "# Heading"],
-    ["lineContext.raw", " # Heading", " # Heading"],
-    ["lineContext.raw", "# Heading ", "# Heading "],
-  ]);
-
-  testBlockProperties(
-    rule,
-    "lineContext.atxHeading"
-  )([
-    ["level", 3, "### Heading 3"],
-    ["text", "Heading 3", "### Heading 3"],
-    ["text", "Heading 3 ", "### Heading 3 "],
-    ["text", "Heading 3  ", "### Heading 3  "],
-    ["prefix", "", "### Heading"],
-    ["prefix", " ", " ### Heading"],
-    ["prefix", "  ", "  ### Heading"],
-    ["suffix", "", "### Heading "],
-    ["suffix", "", "### Heading  "],
-    ["suffix", "", "### Heading#"],
-    ["suffix", " #", "### Heading #"],
-    ["suffix", "  #", "### Heading  #"],
-    ["suffix", "  ##", "### Heading  ##"],
-    ["suffix", "  ## ", "### Heading  ## "],
-    ["suffix", "  ##  ", "### Heading  ##  "],
+    [FAIL, "     #"]
   ]);
 });

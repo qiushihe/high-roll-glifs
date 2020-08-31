@@ -10,12 +10,12 @@ import Application from "./application";
 export default connect(
   null,
   (dispatch: ThunkDispatch<RootState, unknown, Action<string>>) => ({
-    appBoot: () => dispatch(appBoot()),
+    appBoot: () => dispatch(appBoot())
   }),
   (stateProps, dispatchProps, ownProps) => ({
     ...(stateProps || {}),
     ...dispatchProps,
     ...ownProps,
-    onMount: dispatchProps.appBoot,
+    onMount: dispatchProps.appBoot
   })
 )(Application);

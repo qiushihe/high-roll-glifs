@@ -1,15 +1,23 @@
-import last from "lodash/fp/last";
 import trim from "lodash/fp/trim";
-
-import { AdaptedStream, adaptString } from "../../stream/adapter";
 
 import {
   ParserState,
   ParseBlockRule,
   ParsedBlock,
+  LineContext,
   LineContextBuilder,
   parseBlock,
+  shouldParseInlineTokens,
+  parseInlineLines
 } from "../../parser";
+
+import {
+  SETTEXT_HEADING_LINE,
+  PARAGRAPH_LINE,
+  THEMATIC_BREAK_LINE,
+  BULLET_LIST_LINE
+} from "./lineType";
+import { AdaptedStream } from "../../stream/adapter";
 
 const SETTEXT_HEADING_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})(([^\\s]\\s*?)+)(\\s*)$",
@@ -21,99 +29,108 @@ const SETTEXT_HEADING_UNDERLINE_REGEXP = new RegExp(
   "i"
 );
 
-// TODO: Add a `restLines` array into the state so we don't have to re-parse all the remaining
-//       lines for each remaining line.
+const collectLines = (
+  lineContext: LineContext,
+  stream: AdaptedStream
+): string[] => {
+  const lines: string[] = [];
+  let foundUnderline = false;
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock | null => {
-  const lineType = "settext-heading-line";
-  const underlineMatch = stream.match(SETTEXT_HEADING_UNDERLINE_REGEXP);
-  const lineMatch = stream.match(SETTEXT_HEADING_LINE_REGEXP);
+  let lookAheadOffset = 1;
 
-  if (underlineMatch) {
-    const previousLine = last(state.previousLines);
+  while (true) {
+    const lookAheadStream = stream.slice(lookAheadOffset);
 
-    if (previousLine) {
-      const { type: previousLineType } = previousLine;
-
-      if (previousLineType === lineType) {
-        const lineText = underlineMatch[0] || "";
-        const prefix = underlineMatch[1] || "";
-        const text = underlineMatch[2] || "";
-        const suffix = underlineMatch[5] || "";
-        const level = trim(underlineMatch[2]).match(/=/) ? 1 : 2;
-        const lineContext = LineContextBuilder.new(lineText)
-          .settextHeading(prefix, text, suffix, level, true)
-          .build();
-
-        return {
-          lineType,
-          lineContext,
-          inlineTokens: [],
-          restInlineTokens: [],
-        };
-      } else {
-        return null;
-      }
-    } else {
-      return null;
+    if (lookAheadStream.ended()) {
+      break;
     }
-  } else if (lineMatch) {
-    let offset = 1;
-    let offsetUnderlineMatch = null;
 
-    while (true) {
-      const offsetLine = stream.lookAhead(offset);
+    const blocks = parseBlock(lookAheadStream, {
+      context: { skipInlineTokens: true, skipContinuationLines: true }
+    });
 
-      if (offsetLine) {
-        const offsetLineResult = parseBlock(adaptString(offsetLine), {
-          context: { skipInlineTokens: true },
-        });
+    if (blocks.length > 0) {
+      const {
+        lineType: blockLineType,
+        lineContext: blockLineContext
+      } = blocks[0];
 
-        if (offsetLineResult) {
-          const { lineType } = offsetLineResult;
-          const match = offsetLine.match(SETTEXT_HEADING_UNDERLINE_REGEXP);
+      if (
+        blockLineType === PARAGRAPH_LINE ||
+        blockLineType === THEMATIC_BREAK_LINE ||
+        blockLineType === SETTEXT_HEADING_LINE ||
+        blockLineType === BULLET_LIST_LINE
+      ) {
+        lines.push(blockLineContext.raw);
+        lookAheadOffset += 1;
 
-          if (match) {
-            offsetUnderlineMatch = match;
-            break;
-          } else if (lineType === "paragraph-line") {
-            offset += 1;
-          } else {
-            break;
-          }
-        } else {
+        if (blockLineContext.raw.match(SETTEXT_HEADING_UNDERLINE_REGEXP)) {
+          foundUnderline = true;
           break;
         }
       } else {
         break;
       }
-    }
-
-    if (offsetUnderlineMatch) {
-      const lineText = lineMatch[0] || "";
-      const prefix = lineMatch[1] || "";
-      const text = lineMatch[2] || "";
-      const suffix = lineMatch[4] || "";
-      const level = trim(offsetUnderlineMatch[2]).match(/=/) ? 1 : 2;
-      const lineContext = LineContextBuilder.new(lineText)
-        .settextHeading(prefix, text, suffix, level, false)
-        .build();
-
-      return {
-        lineType,
-        lineContext,
-        inlineTokens: [],
-        restInlineTokens: [],
-      };
     } else {
-      return null;
+      break;
     }
-  } else {
-    return null;
   }
+
+  return foundUnderline ? lines : [];
+};
+
+const parse: ParseBlockRule = (
+  stream: AdaptedStream,
+  state: ParserState
+): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
+  const lineMatch = stream.match(SETTEXT_HEADING_LINE_REGEXP);
+
+  if (lineMatch) {
+    const lineText = lineMatch[0] || "";
+    const prefix = lineMatch[1] || "";
+    const text = lineMatch[2] || "";
+    const suffix = lineMatch[4] || "";
+
+    const restLines = collectLines(
+      LineContextBuilder.new(lineText)
+        .settextHeading(prefix, text, suffix, 0, false)
+        .build(),
+      stream
+    );
+
+    if (restLines.length > 0) {
+      const rawLines = [lineText, ...restLines];
+      const level = trim(rawLines[rawLines.length - 1]).match(/=/) ? 1 : 2;
+
+      const inlineLines = rawLines.slice(0, rawLines.length - 1);
+
+      const inlineTokens: string[][][] = shouldParseInlineTokens(state)
+        ? parseInlineLines(inlineLines)
+        : [];
+
+      for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
+        const lineText = rawLines[lineIndex];
+
+        blockTokens.push({
+          lineType: SETTEXT_HEADING_LINE,
+          lineContext: LineContextBuilder.new(lineText)
+            .settextHeading(
+              prefix,
+              text,
+              suffix,
+              level,
+              lineIndex === rawLines.length - 1
+            )
+            .build(),
+          inlineTokens:
+            lineIndex === rawLines.length - 1 ? [] : inlineTokens[lineIndex]
+        });
+      }
+    }
+  }
+
+  return blockTokens;
 };
 
 export default { name: "settext-heading", parse };

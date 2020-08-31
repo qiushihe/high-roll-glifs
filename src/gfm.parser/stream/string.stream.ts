@@ -90,8 +90,8 @@ export const stringStream = (string: string): StringStream => {
       getOr(-1, "index"),
       cond([
         [(i) => i >= 0, (i) => i + stringPosition],
-        [() => true, (i) => i],
-      ]),
+        [() => true, (i) => i]
+      ])
     ])(matchResult);
 
     while (true) {
@@ -130,7 +130,7 @@ export const stringStream = (string: string): StringStream => {
     while (hasMore()) {
       result = [
         ...result,
-        ...mapRegExp(regexp, unMatchedIterator, matchedIterator),
+        ...mapRegExp(regexp, unMatchedIterator, matchedIterator)
       ];
     }
 
@@ -150,6 +150,6 @@ export const stringStream = (string: string): StringStream => {
     mapRegExp,
     mapAllRegExp,
     remainingLength,
-    hasMore,
+    hasMore
   };
 };

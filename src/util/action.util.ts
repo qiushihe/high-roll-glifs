@@ -267,12 +267,12 @@ export const createPromisedAction = (
                     [isFunction, identity],
                     // ... is not a function, then use `identity` (a function
                     // that simply returns its first argument) in the next step.
-                    [stubTrue, constant(identity)],
+                    [stubTrue, constant(identity)]
                   ]),
                   // Use the `mutate` function from the previous step to mutate
                   // the structured payload in the action.
-                  (mutate) => mutate(plainAction.payload),
-                ])(payloadMutator),
+                  (mutate) => mutate(plainAction.payload)
+                ])(payloadMutator)
               }))
               // After the action's payload is mutated (or not) ...
               .then((action) => {

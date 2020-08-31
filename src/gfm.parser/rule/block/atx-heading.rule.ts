@@ -1,6 +1,3 @@
-import { AdaptedStream } from "../../stream/adapter";
-import { getConflictMap } from "../inline/rule";
-
 import {
   ParseBlockRule,
   ParsedBlock,
@@ -8,8 +5,12 @@ import {
   LineContextBuilder,
   parseInline,
   recombobulator,
-  shouldParseInlineTokens,
+  shouldParseInlineTokens
 } from "../../parser";
+
+import { ATX_HEADING_LINE } from "./lineType";
+import { AdaptedStream } from "../../stream/adapter";
+import { getConflictMap } from "../inline/rule";
 
 const ATX_HEADING_LINE_REGEXP = new RegExp(
   "^(\\s{0,3})(#{1,6})((\\s)(.*?))?(\\s+#+\\s*)?$",
@@ -19,8 +20,8 @@ const ATX_HEADING_LINE_REGEXP = new RegExp(
 const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
-): ParsedBlock | null => {
-  const lineType = "atx-heading-line";
+): ParsedBlock[] => {
+  const blockTokens: ParsedBlock[] = [];
   const lineMatch = stream.match(ATX_HEADING_LINE_REGEXP);
 
   if (lineMatch) {
@@ -35,7 +36,6 @@ const parse: ParseBlockRule = (
       .build();
 
     let inlineTokens: string[][] = [];
-    const restInlineTokens: string[][] = [];
 
     if (shouldParseInlineTokens(state)) {
       const levelToken = `atx-heading-level-${level}`;
@@ -49,27 +49,26 @@ const parse: ParseBlockRule = (
           ...Array(level).fill([levelToken, "block-syntax"]),
           ...Array(space.length).fill([levelToken, "block-syntax"]),
           ...Array(text.length).fill([levelToken]),
-          ...Array(suffix.length).fill([levelToken, "block-syntax"]),
+          ...Array(suffix.length).fill([levelToken, "block-syntax"])
         ],
         ...parseInline(text).map((layer) => [
           ...Array(prefix.length).fill([]),
           ...Array(level).fill([]),
           ...Array(space.length).fill([]),
           ...layer,
-          ...Array(suffix.length).fill([]),
-        ]),
+          ...Array(suffix.length).fill([])
+        ])
       ]);
     }
 
-    return {
-      lineType,
+    blockTokens.push({
+      lineType: ATX_HEADING_LINE,
       lineContext,
-      inlineTokens,
-      restInlineTokens,
-    };
-  } else {
-    return null;
+      inlineTokens
+    });
   }
+
+  return blockTokens;
 };
 
 export default { name: "atx-heading", parse };

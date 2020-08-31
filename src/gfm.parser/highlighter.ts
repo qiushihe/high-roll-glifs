@@ -3,6 +3,7 @@ import sortBy from "lodash/fp/sortBy";
 import get from "lodash/fp/get";
 import keys from "lodash/fp/keys";
 import reduce from "lodash/fp/reduce";
+// import includes from "lodash/fp/includes";
 
 import {
   Decoration,
@@ -11,10 +12,25 @@ import {
   ViewPlugin,
   EditorView,
   ViewUpdate,
-  Range,
+  Range
+  // WidgetType
 } from "@codemirror/next/view";
 
 import { Extension } from "@codemirror/next/state";
+
+import {
+  ATX_HEADING_LINE,
+  SETTEXT_HEADING_LINE,
+  BLOCK_QUOTE_LINE,
+  BULLET_LIST_LINE,
+  ORDERED_LIST_LINE,
+  FENCED_CODE_LINE,
+  INDENTED_CODE_LINE,
+  THEMATIC_BREAK_LINE,
+  PARAGRAPH_LINE,
+  BLANK_LINE,
+  EMPTY_LINE
+} from "./rule/block/lineType";
 
 import { adaptStream } from "./stream/adapter";
 import lineStream from "./stream/line.stream";
@@ -30,23 +46,23 @@ const LINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.line({
-          attributes: { class: themeClass(`md-${mapping[key]}`) },
-        }),
+          attributes: { class: themeClass(`md-${mapping[key]}`) }
+        })
       }),
       {}
-    )(keys),
+    )(keys)
 ])({
-  "atx-heading-line": "atx-heading",
-  "settext-heading-line": "settext-heading",
-  "block-quote-line": "block-quote",
-  "paragraph-line": "paragraph",
-  "bullet-list-line": "bullet-list",
-  "ordered-list-line": "ordered-list",
-  "fenced-code-line": "fenced-code",
-  "indented-code-line": "indented-code",
-  "thematic-break-line": "thematic-break",
-  "blank-line": "blank",
-  "empty-line": "empty",
+  [ATX_HEADING_LINE]: "atx-heading",
+  [SETTEXT_HEADING_LINE]: "settext-heading",
+  [BLOCK_QUOTE_LINE]: "block-quote",
+  [BULLET_LIST_LINE]: "bullet-list",
+  [ORDERED_LIST_LINE]: "ordered-list",
+  [FENCED_CODE_LINE]: "fenced-code",
+  [INDENTED_CODE_LINE]: "indented-code",
+  [THEMATIC_BREAK_LINE]: "thematic-break",
+  [PARAGRAPH_LINE]: "paragraph",
+  [BLANK_LINE]: "blank",
+  [EMPTY_LINE]: "empty"
 });
 
 const INLINE_DECORATOR: DecorationIndex = flow([
@@ -56,13 +72,21 @@ const INLINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.mark({
-          attributes: { class: themeClass(`md-${mapping[key]}`) },
-        }),
+          attributes: { class: themeClass(`md-${mapping[key]}`) }
+        })
       }),
       {}
-    )(keys),
+    )(keys)
 ])({
   "block-syntax": "block-syntax",
+  "atx-heading-level-1": "atx-heading-level-1",
+  "atx-heading-level-2": "atx-heading-level-2",
+  "atx-heading-level-3": "atx-heading-level-3",
+  "atx-heading-level-4": "atx-heading-level-4",
+  "atx-heading-level-5": "atx-heading-level-5",
+  "atx-heading-level-6": "atx-heading-level-6",
+  "blockquote-prefix": "blockquote-prefix",
+  "list-leader": "list-leader",
   "code-span": "code-span",
   "code-span-tick": "code-span-tick",
   "link-span": "link-span",
@@ -71,8 +95,16 @@ const INLINE_DECORATOR: DecorationIndex = flow([
   "image-span": "image-span",
   "image-span-open": "image-span-open",
   "image-span-middle": "image-span-middle",
-  "image-span-close": "image-span-close",
+  "image-span-close": "image-span-close"
 });
+
+// class ImageWidget extends WidgetType<string> {
+//   toDOM(UNUSED_view: EditorView): HTMLElement {
+//     const node = document.createElement("span");
+//     node.textContent = "IMAGE-WIDGET";
+//     return node;
+//   }
+// }
 
 class GfmDecorator {
   decorations: DecorationSet;
@@ -102,33 +134,24 @@ class GfmDecorator {
       viewportLines.push(lineText);
     }
 
-    const state: ParserState = { previousLines: [] };
+    const state: ParserState = {};
     const stream = lineStream(viewportLines);
 
-    while (!stream.ended()) {
-      const parseResult = parseBlock(adaptStream(stream), state);
+    // let tmpImageStart = -1;
+    // let tmpImageEnd = -1;
 
-      if (parseResult) {
-        const {
-          lineType,
-          lineContext,
-          inlineTokens,
-          restInlineTokens,
-        } = parseResult;
+    while (!stream.ended()) {
+      const blocks = parseBlock(adaptStream(stream), state);
+
+      for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
+        const block = blocks[blockIndex];
+
+        const { lineType, inlineTokens } = block;
 
         const lineDecorator = LINE_DECORATOR[lineType];
         if (lineDecorator) {
           deco.push(lineDecorator.range(viewport.from + stream.position()));
         }
-
-        state.previousLines = [
-          {
-            type: lineType,
-            context: lineContext,
-            inlineTokens,
-            restInlineTokens,
-          },
-        ];
 
         for (
           let inlineIndex = 0;
@@ -146,16 +169,61 @@ class GfmDecorator {
             if (inlineDecorator) {
               const inlinePosition =
                 viewport.from + stream.position() + inlineIndex;
+
               deco.push(
+                // The extra `+ 1` for the `to` value is because for CodeMirror's `RangeValue`,
+                // the `to` value is not inclusive so we have to `+ 1` to compensate.
                 inlineDecorator.range(inlinePosition, inlinePosition + 1)
               );
             }
           }
         }
+
+        // Advance the stream to the next line for each block result.
+        stream.next();
       }
 
-      stream.next();
+      // if (tmpImageStart < 0 || tmpImageEnd < 0) {
+      //   if (includes("image-span")(tokensAtIndex)) {
+      //     if (tmpImageStart < 0) {
+      //       tmpImageStart = viewport.from + stream.position() + inlineIndex;
+      //     } else {
+      //       if (!includes("image-span")(inlineTokens[inlineIndex + 1])) {
+      //         tmpImageEnd = viewport.from + stream.position() + inlineIndex;
+      //       }
+      //     }
+      //   }
+      // }
     }
+
+    // if (tmpImageStart >= 0 && tmpImageEnd >= 0) {
+    //   let renderWidget = true;
+    //
+    //   for (
+    //     let rangeIndex = 0;
+    //     rangeIndex < view.state.selection.ranges.length;
+    //     rangeIndex++
+    //   ) {
+    //     const { from, to } = view.state.selection.ranges[rangeIndex];
+    //
+    //     if (from <= tmpImageStart && to >= tmpImageEnd + 1) {
+    //       renderWidget = false;
+    //     } else if (from >= tmpImageStart && from <= tmpImageEnd + 1) {
+    //       renderWidget = false;
+    //     } else if (to >= tmpImageStart && to <= tmpImageEnd + 1) {
+    //       renderWidget = false;
+    //     }
+    //   }
+    //
+    //   if (renderWidget) {
+    //     deco.push(
+    //       Decoration.replace({ widget: new ImageWidget("test") }).range(
+    //         tmpImageStart,
+    //         tmpImageEnd + 1
+    //       )
+    //     );
+    //   }
+    // }
 
     return Decoration.set(sortBy([get("from"), get("to")])(deco));
   }
@@ -165,41 +233,41 @@ const gfmDecorations = ViewPlugin.fromClass(GfmDecorator).decorations();
 
 const gfmTheme = EditorView.baseTheme({
   "test-line": {
-    color: "#ff0000",
+    color: "#ff0000"
   },
   "test-mark": {
-    color: "#ff0000",
+    color: "#ff0000"
   },
   "md-block-syntax": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-code-span": {
-    backgroundColor: "#e6e6e6",
+    backgroundColor: "#e6e6e6"
   },
   "md-code-span-tick": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-link-span": {
-    color: "#0000ff",
+    color: "#0000ff"
   },
   "md-link-span-open": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-link-span-close": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-image-span": {
-    color: "#0000ff",
+    color: "#0000ff"
   },
   "md-image-span-open": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-image-span-middle": {
-    color: "#b0b0b0 !important",
+    color: "#b0b0b0 !important"
   },
   "md-image-span-close": {
-    color: "#b0b0b0 !important",
-  },
+    color: "#b0b0b0 !important"
+  }
 });
 
 export default (): Extension[] => [gfmTheme, gfmDecorations];
