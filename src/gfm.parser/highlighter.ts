@@ -19,18 +19,18 @@ import {
 import { Extension } from "@codemirror/next/state";
 
 import {
-  ATX_HEADING_LINE,
-  SETTEXT_HEADING_LINE,
-  BLOCK_QUOTE_LINE,
-  BULLET_LIST_LINE,
-  ORDERED_LIST_LINE,
-  FENCED_CODE_LINE,
-  INDENTED_CODE_LINE,
-  THEMATIC_BREAK_LINE,
-  PARAGRAPH_LINE,
-  BLANK_LINE,
-  EMPTY_LINE
-} from "./rule/block/lineType";
+  ATX_HEADING_BLOCK,
+  SETTEXT_HEADING_BLOCK,
+  BLOCK_QUOTE_BLOCK,
+  BULLET_LIST_BLOCK,
+  ORDERED_LIST_BLOCK,
+  FENCED_CODE_BLOCK,
+  INDENTED_CODE_BLOCK,
+  THEMATIC_BREAK_BLOCK,
+  PARAGRAPH_BLOCK,
+  BLANK_BLOCK,
+  EMPTY_BLOCK
+} from "./rule/block/type";
 
 import { adaptStream } from "./stream/adapter";
 import lineStream from "./stream/line.stream";
@@ -52,17 +52,17 @@ const LINE_DECORATOR: DecorationIndex = flow([
       {}
     )(keys)
 ])({
-  [ATX_HEADING_LINE]: "atx-heading",
-  [SETTEXT_HEADING_LINE]: "settext-heading",
-  [BLOCK_QUOTE_LINE]: "block-quote",
-  [BULLET_LIST_LINE]: "bullet-list",
-  [ORDERED_LIST_LINE]: "ordered-list",
-  [FENCED_CODE_LINE]: "fenced-code",
-  [INDENTED_CODE_LINE]: "indented-code",
-  [THEMATIC_BREAK_LINE]: "thematic-break",
-  [PARAGRAPH_LINE]: "paragraph",
-  [BLANK_LINE]: "blank",
-  [EMPTY_LINE]: "empty"
+  [ATX_HEADING_BLOCK]: "atx-heading",
+  [SETTEXT_HEADING_BLOCK]: "settext-heading",
+  [BLOCK_QUOTE_BLOCK]: "block-quote",
+  [BULLET_LIST_BLOCK]: "bullet-list",
+  [ORDERED_LIST_BLOCK]: "ordered-list",
+  [FENCED_CODE_BLOCK]: "fenced-code",
+  [INDENTED_CODE_BLOCK]: "indented-code",
+  [THEMATIC_BREAK_BLOCK]: "thematic-break",
+  [PARAGRAPH_BLOCK]: "paragraph",
+  [BLANK_BLOCK]: "blank",
+  [EMPTY_BLOCK]: "empty"
 });
 
 const INLINE_DECORATOR: DecorationIndex = flow([
@@ -146,9 +146,9 @@ class GfmDecorator {
       for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
         const block = blocks[blockIndex];
 
-        const { lineType, inlineTokens } = block;
+        const { type, inlineTokens } = block;
 
-        const lineDecorator = LINE_DECORATOR[lineType];
+        const lineDecorator = LINE_DECORATOR[type];
         if (lineDecorator) {
           deco.push(lineDecorator.range(viewport.from + stream.position()));
         }

@@ -1,36 +1,19 @@
 import size from "lodash/fp/size";
 
+import { BULLET_LIST_BLOCK, ORDERED_LIST_BLOCK } from "./type";
+import { LIST_ITEM_LINE, PARAGRAPH_LINE } from "../line/type";
+import { AdaptedStream } from "../../stream/adapter";
+
 import {
-  ParserState,
   ParseBlockRule,
   ParsedBlock,
-  LineContext,
-  LineContextBuilder,
-  parseBlock,
-  shouldParseContinuationLines,
-  shouldParseInlineTokens,
+  BlockContext,
+  BlockContextBuilder,
+  parseLine,
   parseInlineLines
 } from "../../parser";
 
-import {
-  BULLET_LIST_LINE,
-  ORDERED_LIST_LINE,
-  PARAGRAPH_LINE
-} from "./lineType";
-
-import { AdaptedStream } from "../../stream/adapter";
-
-const BULLET_LIST_LINE_REGEXP = new RegExp(
-  "^(\\s{0,3})([-+*])(\\s?)(.*)$",
-  "i"
-);
-
-const ORDERED_LIST_LINE_REGEXP = new RegExp(
-  "^(\\s{0,3})([0-9]{1,9})([.)])(\\s?)(.*)$",
-  "i"
-);
-
-type LineComponents = {
+type ListItemAttributes = {
   lineType: string;
   lineText: string;
   prefix: string;
@@ -40,49 +23,39 @@ type LineComponents = {
   content: string;
 };
 
-const getLineMatch = (stream: AdaptedStream): LineComponents | null => {
-  const bulletLineMatch = stream.match(BULLET_LIST_LINE_REGEXP);
-  const orderedLineMatch = stream.match(ORDERED_LIST_LINE_REGEXP);
+const getListItemAttributes = (
+  stream: AdaptedStream
+): ListItemAttributes | null => {
+  const listItemLine = parseLine(stream.text()).getLineByType(LIST_ITEM_LINE);
 
-  if (bulletLineMatch) {
-    const lineText = bulletLineMatch[0] || "";
-    const prefix = bulletLineMatch[1] || "";
-    const marker = bulletLineMatch[2] || "";
-    const spaces = bulletLineMatch[3] || "";
-    const content = bulletLineMatch[4] || "";
+  if (listItemLine && listItemLine.context.listItem) {
+    const rawText = listItemLine.context.raw;
+    const listItem = listItemLine.context.listItem;
 
-    return {
-      lineType: BULLET_LIST_LINE,
-      lineText,
-      prefix,
-      digits: "",
-      marker,
-      spaces,
-      content
+    const common = {
+      lineText: rawText,
+      prefix: listItem.prefix,
+      digits: listItem.digits,
+      marker: listItem.marker,
+      spaces: listItem.spaces,
+      content: listItem.content
     };
-  } else if (orderedLineMatch) {
-    const lineText = orderedLineMatch[0] || "";
-    const prefix = orderedLineMatch[1] || "";
-    const digits = orderedLineMatch[2] || "";
-    const marker = orderedLineMatch[3] || "";
-    const spaces = orderedLineMatch[4] || "";
-    const content = orderedLineMatch[5] || "";
 
-    return {
-      lineType: ORDERED_LIST_LINE,
-      lineText,
-      prefix,
-      digits,
-      marker,
-      spaces,
-      content
-    };
+    if (listItem.type === "bullet") {
+      return { lineType: BULLET_LIST_BLOCK, ...common };
+    } else if (listItem.type === "ordered") {
+      return { lineType: ORDERED_LIST_BLOCK, ...common };
+    } else {
+      return null;
+    }
   } else {
     return null;
   }
 };
 
-const getLineContext = (lineMatch: LineComponents): LineContext | null => {
+const getBlockContext = (
+  lineMatch: ListItemAttributes
+): BlockContext | null => {
   const {
     lineType,
     lineText,
@@ -101,9 +74,9 @@ const getLineContext = (lineMatch: LineComponents): LineContext | null => {
       const leader = `${prefix}${digits}${marker}${spaces}`;
 
       // ... and build the line context with size of `leader`.
-      return LineContextBuilder.new(lineText)
+      return BlockContextBuilder.new(lineText)
         .list(
-          lineType === BULLET_LIST_LINE ? "bullet" : "ordered",
+          lineType === BULLET_LIST_BLOCK ? "bullet" : "ordered",
           size(leader)
         )
         .build();
@@ -121,11 +94,11 @@ const getLineContext = (lineMatch: LineComponents): LineContext | null => {
 
     // ... and build the line context with size of `leader` + 1.
     return (
-      LineContextBuilder.new(lineText)
+      BlockContextBuilder.new(lineText)
         // The `+ 1` is because even though the list item itself has no content, any lazy
         // continuation lines would still need the extra space added before their content.
         .list(
-          lineType === BULLET_LIST_LINE ? "bullet" : "ordered",
+          lineType === BULLET_LIST_BLOCK ? "bullet" : "ordered",
           size(leader) + 1
         )
         .build()
@@ -135,7 +108,7 @@ const getLineContext = (lineMatch: LineComponents): LineContext | null => {
 
 const collectLines = (
   lineType: string,
-  lineContext: LineContext,
+  lineContext: BlockContext,
   stream: AdaptedStream
 ): string[] => {
   const lines: string[] = [];
@@ -149,20 +122,17 @@ const collectLines = (
       break;
     }
 
-    const blocks = parseBlock(lookAheadStream, {
-      context: { skipInlineTokens: true, skipContinuationLines: true }
-    });
+    const parsedLine = parseLine(lookAheadStream.text());
+    const parsedLineTypes = parsedLine.getTypes();
+    const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
 
-    if (blocks.length > 0) {
-      const block = blocks[blocks.length - 1];
-      const { lineType: blockLineType, lineContext: blockLineContext } = block;
-
-      if (blockLineType === PARAGRAPH_LINE) {
-        lines.push(blockLineContext.raw);
-        lookAheadOffset += 1;
-      } else {
-        break;
-      }
+    if (
+      paragraphLine &&
+      paragraphLine.context.paragraph &&
+      parsedLineTypes.length === 1
+    ) {
+      lines.push(paragraphLine.context.raw);
+      lookAheadOffset += 1;
     } else {
       break;
     }
@@ -176,31 +146,24 @@ const collectLines = (
 //       spaces so that the "space" segment would have up to 4 spaces.
 //       This step needs to be done before the "leader" segment can be determined.
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock[] => {
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = getLineMatch(stream);
+  const listItemAttributes = getListItemAttributes(stream);
 
-  if (lineMatch) {
-    const lineContext = getLineContext(lineMatch);
+  if (listItemAttributes) {
+    const blockContext = getBlockContext(listItemAttributes);
 
-    if (lineContext) {
-      const contextList = lineContext.list;
+    if (blockContext) {
+      const contextList = blockContext.list;
 
       if (contextList) {
-        const { lineType, lineText, content } = lineMatch;
+        const { lineType, lineText, content } = listItemAttributes;
 
-        const restLines = shouldParseContinuationLines(state)
-          ? collectLines(lineType, lineContext, stream)
-          : [];
+        const restLines = collectLines(lineType, blockContext, stream);
 
         const inlineLines = [content, ...restLines];
 
-        const inlineTokens: string[][][] = shouldParseInlineTokens(state)
-          ? parseInlineLines(inlineLines)
-          : [];
+        const inlineTokens: string[][][] = parseInlineLines(inlineLines);
 
         const rawLines: [number, string][] = [
           [contextList.leader, lineText],
@@ -212,8 +175,8 @@ const parse: ParseBlockRule = (
           const lineText = rawLines[lineIndex][1];
 
           blockTokens.push({
-            lineType,
-            lineContext: LineContextBuilder.new(lineText)
+            type: lineType,
+            context: BlockContextBuilder.new(lineText)
               .list(contextList.type, contextList.leader)
               .build(),
             inlineTokens: [

@@ -1,28 +1,33 @@
-import { THEMATIC_BREAK_LINE } from "./lineType";
+import { THEMATIC_BREAK_BLOCK } from "./type";
+import { THEMATIC_BREAK_LINE } from "../line/type";
 import { AdaptedStream } from "../../stream/adapter";
-import { ParseBlockRule, ParsedBlock, LineContextBuilder } from "../../parser";
 
-const THEMATIC_BREAK_LINE_REGEXP = new RegExp(
-  "^(\\s{0,3})((-\\s*?){3,}|(_\\s*?){3,}|(\\*\\s*?){3,})(\\s*)$",
-  "i"
-);
+import {
+  ParseBlockRule,
+  ParsedBlock,
+  BlockContextBuilder,
+  parseLine
+} from "../../parser";
 
 const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(THEMATIC_BREAK_LINE_REGEXP);
+  const thematicBreakLine = parseLine(stream.text()).getLineByType(
+    THEMATIC_BREAK_LINE
+  );
 
-  if (lineMatch) {
-    const lineText = lineMatch[0] || "";
-    const prefix = lineMatch[1] || "";
-    const text = lineMatch[2] || "";
-    const suffix = lineMatch[6] || "";
-    const lineContext = LineContextBuilder.new(lineText)
-      .thematicBreak(prefix, text, suffix)
-      .build();
+  if (thematicBreakLine && thematicBreakLine.context.thematicBreak) {
+    const rawText = thematicBreakLine.context.raw;
+    const thematicBreak = thematicBreakLine.context.thematicBreak;
 
     blockTokens.push({
-      lineType: THEMATIC_BREAK_LINE,
-      lineContext,
+      type: THEMATIC_BREAK_BLOCK,
+      context: BlockContextBuilder.new(rawText)
+        .thematicBreak(
+          thematicBreak.prefix,
+          thematicBreak.text,
+          thematicBreak.suffix
+        )
+        .build(),
       inlineTokens: []
     });
   }

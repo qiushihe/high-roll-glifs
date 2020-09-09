@@ -1,28 +1,11 @@
-import { LineContext } from "./line.context";
+import { BlockContext } from "/src/gfm.parser/parser/block";
 
 export interface LineState {
   type: string;
-  context: LineContext;
+  context: BlockContext;
   inlineTokens: string[][];
 }
 
-export interface ParserStateContext {
-  skipInlineTokens?: boolean;
-  skipContinuationLines?: boolean;
-}
-
 export interface ParserState {
-  context?: ParserStateContext;
+  UNUSED_attrPleaseIgnore?: unknown;
 }
-
-export const shouldParseInlineTokens = (state: ParserState): boolean => {
-  return state.context && state.context.skipInlineTokens
-    ? !state.context.skipInlineTokens
-    : true;
-};
-
-export const shouldParseContinuationLines = (state: ParserState): boolean => {
-  return state.context && state.context.skipContinuationLines
-    ? !state.context.skipContinuationLines
-    : true;
-};

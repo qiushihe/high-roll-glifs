@@ -1,21 +1,17 @@
+import { PARAGRAPH_BLOCK } from "./type";
+import { PARAGRAPH_LINE } from "../line/type";
+import { AdaptedStream } from "../../stream/adapter";
+
 import {
   ParseBlockRule,
   ParsedBlock,
-  ParserState,
-  LineContext,
-  LineContextBuilder,
-  parseInlineLines,
-  shouldParseContinuationLines,
-  shouldParseInlineTokens
+  BlockContext,
+  BlockContextBuilder,
+  parseLine,
+  parseInlineLines
 } from "../../parser";
 
-import { PARAGRAPH_LINE } from "./lineType";
-import { AdaptedStream } from "../../stream/adapter";
-import { parse as parseBlock } from "../../parser/block.parser";
-
-const PARAGRAPH_LINE_REGEXP = new RegExp("^(\\s*[^\\s]+\\s*)+$", "i");
-
-const collectLines = (lineContext: LineContext, stream: AdaptedStream) => {
+const collectLines = (lineContext: BlockContext, stream: AdaptedStream) => {
   const lines: string[] = [];
 
   let lookAheadOffset = 1;
@@ -27,20 +23,17 @@ const collectLines = (lineContext: LineContext, stream: AdaptedStream) => {
       break;
     }
 
-    const blocks = parseBlock(lookAheadStream, {
-      context: { skipInlineTokens: true, skipContinuationLines: true }
-    });
+    const parsedLine = parseLine(lookAheadStream.text());
+    const parsedLineTypes = parsedLine.getTypes();
+    const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
 
-    if (blocks.length > 0) {
-      const block = blocks[blocks.length - 1];
-      const { lineType: blockLineType, lineContext: blockLineContext } = block;
-
-      if (blockLineType === PARAGRAPH_LINE) {
-        lines.push(blockLineContext.raw);
-        lookAheadOffset += 1;
-      } else {
-        break;
-      }
+    if (
+      paragraphLine &&
+      paragraphLine.context.paragraph &&
+      parsedLineTypes.length === 1
+    ) {
+      lines.push(paragraphLine.context.raw);
+      lookAheadOffset += 1;
     } else {
       break;
     }
@@ -49,34 +42,26 @@ const collectLines = (lineContext: LineContext, stream: AdaptedStream) => {
   return lines;
 };
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock[] => {
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(PARAGRAPH_LINE_REGEXP);
+  const paragraphLine = parseLine(stream.text()).getLineByType(PARAGRAPH_LINE);
 
-  if (lineMatch) {
-    const lineMatchRaw = lineMatch[0] || "";
-    const restLines = shouldParseContinuationLines(state)
-      ? collectLines(
-          LineContextBuilder.new(lineMatchRaw).paragraph().build(),
-          stream
-        )
-      : [];
+  if (paragraphLine) {
+    const restLines = collectLines(
+      BlockContextBuilder.new(paragraphLine.context.raw).paragraph().build(),
+      stream
+    );
 
-    const rawLines = [lineMatchRaw, ...restLines];
+    const rawLines = [paragraphLine.context.raw, ...restLines];
 
-    const inlineTokens: string[][][] = shouldParseInlineTokens(state)
-      ? parseInlineLines(rawLines)
-      : [];
+    const inlineTokens: string[][][] = parseInlineLines(rawLines);
 
     for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
       const lineText = rawLines[lineIndex];
 
       blockTokens.push({
-        lineType: PARAGRAPH_LINE,
-        lineContext: LineContextBuilder.new(lineText).paragraph().build(),
+        type: PARAGRAPH_BLOCK,
+        context: BlockContextBuilder.new(lineText).paragraph().build(),
         inlineTokens: inlineTokens[lineIndex]
       });
     }

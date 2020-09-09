@@ -12,8 +12,10 @@ import constant from "lodash/fp/constant";
 export const PASS = true;
 export const FAIL = false;
 
-export const adaptLines = (text: string): AdaptedStream => {
-  const lines = split("\n")(text);
+export const adaptLines = (rawText: string): AdaptedStream => {
+  const lines = split("\n")(rawText);
+
+  const text = constant(lines[0]);
 
   const ended = constant(lines.length <= 0);
 
@@ -22,7 +24,7 @@ export const adaptLines = (text: string): AdaptedStream => {
 
   const slice = (from: number) => adaptLines(lines.slice(from).join("\n"));
 
-  return { ended, match, slice };
+  return { text, ended, match, slice };
 };
 
 export const testBlockAcceptance = (rule: BlockRule) => (

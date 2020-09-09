@@ -1,20 +1,22 @@
-import { BLANK_LINE } from "./lineType";
+import { BLANK_BLOCK } from "./type";
+import { BLANK_LINE } from "../line/type";
 import { AdaptedStream } from "../../stream/adapter";
-import { ParseBlockRule, ParsedBlock, LineContextBuilder } from "../../parser";
 
-const BLANK_LINE_REGEXP = new RegExp("^\\s+$", "i");
+import {
+  ParseBlockRule,
+  ParsedBlock,
+  BlockContextBuilder,
+  parseLine
+} from "../../parser";
 
 const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(BLANK_LINE_REGEXP);
+  const blankLine = parseLine(stream.text()).getLineByType(BLANK_LINE);
 
-  if (lineMatch) {
-    const lineText = lineMatch[0] || "";
-    const lineContext = LineContextBuilder.new(lineText).blank().build();
-
+  if (blankLine) {
     blockTokens.push({
-      lineType: BLANK_LINE,
-      lineContext,
+      type: BLANK_BLOCK,
+      context: BlockContextBuilder.new(blankLine.context.raw).blank().build(),
       inlineTokens: []
     });
   }

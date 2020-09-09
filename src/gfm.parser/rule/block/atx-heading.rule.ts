@@ -1,69 +1,61 @@
-import {
-  ParseBlockRule,
-  ParsedBlock,
-  ParserState,
-  LineContextBuilder,
-  parseInline,
-  recombobulator,
-  shouldParseInlineTokens
-} from "../../parser";
-
-import { ATX_HEADING_LINE } from "./lineType";
+import { ATX_HEADING_BLOCK } from "./type";
+import { ATX_HEADING_LINE } from "../line/type";
 import { AdaptedStream } from "../../stream/adapter";
 import { getConflictMap } from "../inline/rule";
 
-const ATX_HEADING_LINE_REGEXP = new RegExp(
-  "^(\\s{0,3})(#{1,6})((\\s)(.*?))?(\\s+#+\\s*)?$",
-  "i"
-);
+import {
+  ParseBlockRule,
+  ParsedBlock,
+  BlockContextBuilder,
+  parseLine,
+  parseInline,
+  recombobulator
+} from "../../parser";
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock[] => {
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(ATX_HEADING_LINE_REGEXP);
+  const atxHeadingLine = parseLine(stream.text()).getLineByType(
+    ATX_HEADING_LINE
+  );
 
-  if (lineMatch) {
-    const lineText = lineMatch[0] || "";
-    const prefix = lineMatch[1] || "";
-    const level = (lineMatch[2] || "").length;
-    const space = lineMatch[4] || "";
-    const text = lineMatch[5] || "";
-    const suffix = lineMatch[6] || "";
-    const lineContext = LineContextBuilder.new(lineText)
-      .atxHeading(level, prefix, text, suffix)
-      .build();
+  if (atxHeadingLine && atxHeadingLine.context.atxHeading) {
+    const rawText = atxHeadingLine.context.raw;
+    const atxHeading = atxHeadingLine.context.atxHeading;
 
     let inlineTokens: string[][] = [];
 
-    if (shouldParseInlineTokens(state)) {
-      const levelToken = `atx-heading-level-${level}`;
+    const levelToken = `atx-heading-level-${atxHeading.level}`;
 
-      inlineTokens = recombobulator(
-        lineText.length,
-        getConflictMap()
-      )([
-        [
-          ...Array(prefix.length).fill([levelToken, "block-syntax"]),
-          ...Array(level).fill([levelToken, "block-syntax"]),
-          ...Array(space.length).fill([levelToken, "block-syntax"]),
-          ...Array(text.length).fill([levelToken]),
-          ...Array(suffix.length).fill([levelToken, "block-syntax"])
-        ],
-        ...parseInline(text).map((layer) => [
-          ...Array(prefix.length).fill([]),
-          ...Array(level).fill([]),
-          ...Array(space.length).fill([]),
-          ...layer,
-          ...Array(suffix.length).fill([])
-        ])
-      ]);
-    }
+    inlineTokens = recombobulator(
+      rawText.length,
+      getConflictMap()
+    )([
+      [
+        ...Array(atxHeading.prefix.length).fill([levelToken, "block-syntax"]),
+        ...Array(atxHeading.level).fill([levelToken, "block-syntax"]),
+        ...Array(atxHeading.space.length).fill([levelToken, "block-syntax"]),
+        ...Array(atxHeading.text.length).fill([levelToken]),
+        ...Array(atxHeading.suffix.length).fill([levelToken, "block-syntax"])
+      ],
+      ...parseInline(atxHeading.text).map((layer) => [
+        ...Array(atxHeading.prefix.length).fill([]),
+        ...Array(atxHeading.level).fill([]),
+        ...Array(atxHeading.space.length).fill([]),
+        ...layer,
+        ...Array(atxHeading.suffix.length).fill([])
+      ])
+    ]);
 
     blockTokens.push({
-      lineType: ATX_HEADING_LINE,
-      lineContext,
+      type: ATX_HEADING_BLOCK,
+      context: BlockContextBuilder.new(rawText)
+        .atxHeading(
+          atxHeading.level,
+          atxHeading.prefix,
+          atxHeading.text,
+          atxHeading.suffix
+        )
+        .build(),
       inlineTokens
     });
   }

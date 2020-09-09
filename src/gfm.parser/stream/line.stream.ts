@@ -1,7 +1,7 @@
 export interface LineStream {
   index: () => number;
   position: () => number;
-  text: () => string | null;
+  text: () => string;
   next: () => void;
   ended: () => boolean;
   match: (regexp: RegExp, UNUSED_consume: boolean) => RegExpMatchArray | null;
@@ -28,7 +28,7 @@ const lineStream = (lines: string[]): LineStream => {
     }
   };
 
-  const text = (): string | null => lines[lineIndex];
+  const text = (): string => lines[lineIndex] || "";
 
   const next = () => {
     lineIndex += 1;

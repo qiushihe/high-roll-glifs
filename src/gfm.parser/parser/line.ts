@@ -1,28 +1,70 @@
 import identity from "lodash/fp/identity";
 
-import {
-  AtxHeading,
-  Blank,
-  BlockQuote,
-  Empty,
-  FencedCode,
-  IndentedCode,
-  List,
-  Paragraph,
-  SettextHeading,
-  ThematicBreak
-} from "./block";
+export interface AtxHeading {
+  prefix: string;
+  level: number;
+  space: string;
+  text: string;
+  suffix: string;
+}
+
+export interface SettextHeadingUnderline {
+  prefix: string;
+  text: string;
+  suffix: string;
+  level: number;
+}
+
+export interface BlockQuote {
+  prefix: string;
+  text: string;
+}
+
+export interface ListItem {
+  type: string;
+  prefix: string;
+  digits: string;
+  marker: string;
+  spaces: string;
+  content: string;
+}
+
+export interface FencedCodeFence {
+  info: string;
+}
+
+export interface IndentedCode {
+  UNUSED_placeholderAttr?: unknown;
+}
+
+export interface Paragraph {
+  UNUSED_placeholderAttr?: unknown;
+}
+
+export interface ThematicBreak {
+  prefix: string;
+  text: string;
+  suffix: string;
+}
+
+export interface Blank {
+  UNUSED_placeholderAttr?: unknown;
+}
+
+export interface Empty {
+  UNUSED_placeholderAttr?: unknown;
+}
 
 export interface LineContext {
   raw: string;
   atxHeading?: AtxHeading;
-  settextHeading?: SettextHeading;
+  settextHeadingUnderline?: SettextHeadingUnderline;
   blockQuote?: BlockQuote;
-  list?: List;
-  fencedCode?: FencedCode;
+  listItem?: ListItem;
+  fencedCodeFence?: FencedCodeFence;
   indentedCode?: IndentedCode;
-  thematicBreak?: ThematicBreak;
   paragraph?: Paragraph;
+  thematicBreak?: ThematicBreak;
   blank?: Blank;
   empty?: Empty;
 }
@@ -43,30 +85,35 @@ export class LineContextBuilder {
   }
 
   public atxHeading(
-    level: number,
     prefix: string,
+    level: number,
+    space: string,
     text: string,
     suffix: string
   ): LineContextBuilder {
     this.namespace = "atxHeading";
-    this.values = identity<AtxHeading>({ level, prefix, text, suffix });
+    this.values = identity<AtxHeading>({
+      prefix,
+      level,
+      space,
+      text,
+      suffix
+    });
     return this;
   }
 
-  public settextHeading(
+  public settextHeadingUnderline(
     prefix: string,
     text: string,
     suffix: string,
-    level: number,
-    isUnderline: boolean
+    level: number
   ): LineContextBuilder {
-    this.namespace = "settextHeading";
-    this.values = identity<SettextHeading>({
+    this.namespace = "settextHeadingUnderline";
+    this.values = identity<SettextHeadingUnderline>({
       prefix,
       text,
       suffix,
-      level,
-      isUnderline
+      level
     });
     return this;
   }
@@ -77,19 +124,29 @@ export class LineContextBuilder {
     return this;
   }
 
-  public list(type: string, leader: number): LineContextBuilder {
-    this.namespace = "list";
-    this.values = identity<List>({ type, leader });
+  public listItem(
+    type: string,
+    prefix: string,
+    digits: string,
+    marker: string,
+    spaces: string,
+    content: string
+  ): LineContextBuilder {
+    this.namespace = "listItem";
+    this.values = identity<ListItem>({
+      type,
+      prefix,
+      digits,
+      marker,
+      spaces,
+      content
+    });
     return this;
   }
 
-  public fencedCode(
-    info: string,
-    isOpenFence: boolean,
-    isCloseFence: boolean
-  ): LineContextBuilder {
-    this.namespace = "fencedCode";
-    this.values = identity<FencedCode>({ info, isOpenFence, isCloseFence });
+  public fencedCodeFence(info: string): LineContextBuilder {
+    this.namespace = "fencedCodeFence";
+    this.values = identity<FencedCodeFence>({ info });
     return this;
   }
 

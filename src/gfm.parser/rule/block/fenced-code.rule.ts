@@ -1,27 +1,17 @@
+import { FENCED_CODE_BLOCK } from "./type";
+import { FENCED_CODE_FENCE_LINE } from "../line/type";
+import { AdaptedStream } from "../../stream/adapter";
+
 import {
   ParseBlockRule,
   ParsedBlock,
-  LineContext,
-  LineContextBuilder,
-  parseBlock
+  BlockContext,
+  BlockContextBuilder,
+  parseLine
 } from "../../parser";
 
-import {
-  FENCED_CODE_LINE,
-  PARAGRAPH_LINE,
-  BLANK_LINE,
-  EMPTY_LINE
-} from "./lineType";
-
-import { AdaptedStream } from "../../stream/adapter";
-
-const FENCED_CODE_FENCE_REGEXP = new RegExp(
-  "^(\\s{0,3})(((`{3,})(\\s*[^`]*\\s*))|((~{3,})(\\s*[^~]*\\s*)))$",
-  "i"
-);
-
 const collectLines = (
-  lineContext: LineContext,
+  lineContext: BlockContext,
   stream: AdaptedStream
 ): string[] => {
   const lines: string[] = [];
@@ -36,27 +26,18 @@ const collectLines = (
       break;
     }
 
-    const blocks = parseBlock(lookAheadStream, {
-      context: { skipInlineTokens: true, skipContinuationLines: true }
-    });
+    const parsedLine = parseLine(lookAheadStream.text());
+    const parsedLineTypes = parsedLine.getTypes();
 
-    if (blocks.length > 0) {
-      const block = blocks[blocks.length - 1];
-      const { lineType: blockLineType, lineContext: blockLineContext } = block;
+    if (parsedLineTypes.length > 0) {
+      lines.push(parsedLine.getRaw());
+      lookAheadOffset += 1;
 
-      if (
-        blockLineType === PARAGRAPH_LINE ||
-        blockLineType === BLANK_LINE ||
-        blockLineType === EMPTY_LINE
-      ) {
-        lines.push(blockLineContext.raw);
-        lookAheadOffset += 1;
-
-        if (blockLineContext.raw.match(FENCED_CODE_FENCE_REGEXP)) {
-          foundClosingFence = true;
-          break;
-        }
-      } else {
+      const fencedCodeFenceLine = parsedLine.getLineByType(
+        FENCED_CODE_FENCE_LINE
+      );
+      if (fencedCodeFenceLine && fencedCodeFenceLine.context.fencedCodeFence) {
+        foundClosingFence = true;
         break;
       }
     } else {
@@ -69,11 +50,13 @@ const collectLines = (
 
 const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(FENCED_CODE_FENCE_REGEXP);
+  const fencedCodeFenceLine = parseLine(stream.text()).getLineByType(
+    FENCED_CODE_FENCE_LINE
+  );
 
-  if (lineMatch) {
-    const lineMatchRaw = lineMatch[0] || "";
-    const lineMatchInfo = lineMatch[5] || lineMatch[8] || "";
+  if (fencedCodeFenceLine && fencedCodeFenceLine.context.fencedCodeFence) {
+    const rawText = fencedCodeFenceLine.context.raw;
+    const fencedCodeFence = fencedCodeFenceLine.context.fencedCodeFence;
 
     // The collection of "rest lines" should not be predicated on calling
     // the `shouldParseContinuationLines` function because the:
@@ -84,23 +67,23 @@ const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
     // are not continuation lines and thus not controlled by the continuation lines
     // parsing flag.
     const restLines = collectLines(
-      LineContextBuilder.new(lineMatchRaw)
-        .fencedCode(lineMatchInfo, true, false)
+      BlockContextBuilder.new(rawText)
+        .fencedCode(fencedCodeFence.info, true, false)
         .build(),
       stream
     );
 
     if (restLines.length > 0) {
-      const rawLines = [lineMatchRaw, ...restLines];
+      const rawLines = [rawText, ...restLines];
 
       for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
         const lineText = rawLines[lineIndex];
 
         blockTokens.push({
-          lineType: FENCED_CODE_LINE,
-          lineContext: LineContextBuilder.new(lineText)
+          type: FENCED_CODE_BLOCK,
+          context: BlockContextBuilder.new(lineText)
             .fencedCode(
-              lineMatchInfo,
+              fencedCodeFence.info,
               lineIndex === 0,
               lineIndex === rawLines.length - 1
             )

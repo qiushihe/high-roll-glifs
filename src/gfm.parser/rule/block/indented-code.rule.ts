@@ -1,20 +1,17 @@
-import {
-  ParserState,
-  ParseBlockRule,
-  ParsedBlock,
-  LineContext,
-  LineContextBuilder,
-  parseBlock,
-  shouldParseContinuationLines
-} from "../../parser";
-
-import { INDENTED_CODE_LINE } from "./lineType";
+import { INDENTED_CODE_BLOCK } from "./type";
+import { INDENTED_CODE_LINE } from "../line/type";
 import { AdaptedStream } from "../../stream/adapter";
 
-const INDENTED_CODE_REGEXP = new RegExp("^\\s{4}(.+)$", "i");
+import {
+  ParseBlockRule,
+  ParsedBlock,
+  BlockContext,
+  BlockContextBuilder,
+  parseLine
+} from "../../parser";
 
 const collectLines = (
-  lineContext: LineContext,
+  lineContext: BlockContext,
   stream: AdaptedStream
 ): string[] => {
   const lines: string[] = [];
@@ -28,21 +25,15 @@ const collectLines = (
       break;
     }
 
-    const blocks = parseBlock(lookAheadStream, {
-      context: { skipInlineTokens: true, skipContinuationLines: true }
-    });
+    const indentedCodeLine = parseLine(lookAheadStream.text()).getLineByType(
+      INDENTED_CODE_LINE
+    );
 
-    if (blocks.length > 0) {
-      const block = blocks[blocks.length - 1];
-      const { lineType: blockLineType, lineContext: blockLineContext } = block;
+    if (indentedCodeLine && indentedCodeLine.context.indentedCode) {
+      const rawText = indentedCodeLine.context.raw;
 
-      if (blockLineType === INDENTED_CODE_LINE) {
-        lines.push(blockLineContext.raw);
-
-        lookAheadOffset += 1;
-      } else {
-        break;
-      }
+      lines.push(rawText);
+      lookAheadOffset += 1;
     } else {
       break;
     }
@@ -51,31 +42,28 @@ const collectLines = (
   return lines;
 };
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock[] => {
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(INDENTED_CODE_REGEXP);
+  const indentedCodeLine = parseLine(stream.text()).getLineByType(
+    INDENTED_CODE_LINE
+  );
 
-  if (lineMatch) {
-    const lineMatchRaw = lineMatch[0] || "";
+  if (indentedCodeLine && indentedCodeLine.context.indentedCode) {
+    const rawText = indentedCodeLine.context.raw;
 
-    const restLines = shouldParseContinuationLines(state)
-      ? collectLines(
-          LineContextBuilder.new(lineMatchRaw).indentedCode().build(),
-          stream
-        )
-      : [];
+    const restLines = collectLines(
+      BlockContextBuilder.new(rawText).indentedCode().build(),
+      stream
+    );
 
-    const rawLines = [lineMatchRaw, ...restLines];
+    const rawLines = [rawText, ...restLines];
 
     for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
       const lineText = rawLines[lineIndex];
 
       blockTokens.push({
-        lineType: INDENTED_CODE_LINE,
-        lineContext: LineContextBuilder.new(lineText).indentedCode().build(),
+        type: INDENTED_CODE_BLOCK,
+        context: BlockContextBuilder.new(lineText).indentedCode().build(),
         inlineTokens: []
       });
     }

@@ -1,39 +1,30 @@
 import trim from "lodash/fp/trim";
 
+import { AdaptedStream } from "../../stream/adapter";
+import { PARAGRAPH_LINE, SETTEXT_HEADING_UNDERLINE_LINE } from "../line/type";
+import { SETTEXT_HEADING_BLOCK } from "./type";
+
 import {
-  ParserState,
   ParseBlockRule,
   ParsedBlock,
-  LineContext,
-  LineContextBuilder,
-  parseBlock,
-  shouldParseInlineTokens,
+  BlockContext,
+  BlockContextBuilder,
+  parseLine,
   parseInlineLines
 } from "../../parser";
 
-import {
-  SETTEXT_HEADING_LINE,
-  PARAGRAPH_LINE,
-  THEMATIC_BREAK_LINE,
-  BULLET_LIST_LINE
-} from "./lineType";
-import { AdaptedStream } from "../../stream/adapter";
-
-const SETTEXT_HEADING_LINE_REGEXP = new RegExp(
-  "^(\\s{0,3})(([^\\s]\\s*?)+)(\\s*)$",
-  "i"
-);
-
-const SETTEXT_HEADING_UNDERLINE_REGEXP = new RegExp(
-  "^(\\s{0,3})((-+)|(=+))(\\s*)$",
-  "i"
-);
+interface LineAttributes {
+  raw: string;
+  prefix: string;
+  text: string;
+  suffix: string;
+}
 
 const collectLines = (
-  lineContext: LineContext,
+  lineContext: BlockContext,
   stream: AdaptedStream
-): string[] => {
-  const lines: string[] = [];
+): LineAttributes[] => {
+  const lines: LineAttributes[] = [];
   let foundUnderline = false;
 
   let lookAheadOffset = 1;
@@ -45,32 +36,38 @@ const collectLines = (
       break;
     }
 
-    const blocks = parseBlock(lookAheadStream, {
-      context: { skipInlineTokens: true, skipContinuationLines: true }
-    });
+    const parsedLine = parseLine(lookAheadStream.text());
+    const parsedLineTypes = parsedLine.getTypes();
+    const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
+    const settextHeadingUnderlineLine = parsedLine.getLineByType(
+      SETTEXT_HEADING_UNDERLINE_LINE
+    );
 
-    if (blocks.length > 0) {
-      const {
-        lineType: blockLineType,
-        lineContext: blockLineContext
-      } = blocks[0];
+    if (
+      paragraphLine &&
+      paragraphLine.context.paragraph &&
+      parsedLineTypes.length === 1
+    ) {
+      const rawText = paragraphLine.context.raw;
 
-      if (
-        blockLineType === PARAGRAPH_LINE ||
-        blockLineType === THEMATIC_BREAK_LINE ||
-        blockLineType === SETTEXT_HEADING_LINE ||
-        blockLineType === BULLET_LIST_LINE
-      ) {
-        lines.push(blockLineContext.raw);
-        lookAheadOffset += 1;
+      lines.push({ raw: rawText, prefix: "", text: rawText, suffix: "" });
+      lookAheadOffset += 1;
+    } else if (
+      settextHeadingUnderlineLine &&
+      settextHeadingUnderlineLine.context.settextHeadingUnderline
+    ) {
+      const rawText = settextHeadingUnderlineLine.context.raw;
+      const settextHeadingUnderline =
+        settextHeadingUnderlineLine.context.settextHeadingUnderline;
 
-        if (blockLineContext.raw.match(SETTEXT_HEADING_UNDERLINE_REGEXP)) {
-          foundUnderline = true;
-          break;
-        }
-      } else {
-        break;
-      }
+      lines.push({
+        raw: rawText,
+        prefix: settextHeadingUnderline.prefix,
+        text: settextHeadingUnderline.text,
+        suffix: settextHeadingUnderline.suffix
+      });
+      foundUnderline = true;
+      break;
     } else {
       break;
     }
@@ -79,52 +76,57 @@ const collectLines = (
   return foundUnderline ? lines : [];
 };
 
-const parse: ParseBlockRule = (
-  stream: AdaptedStream,
-  state: ParserState
-): ParsedBlock[] => {
+const parse: ParseBlockRule = (stream: AdaptedStream): ParsedBlock[] => {
   const blockTokens: ParsedBlock[] = [];
-  const lineMatch = stream.match(SETTEXT_HEADING_LINE_REGEXP);
+  const parsedLine = parseLine(stream.text());
+  const parsedLineTypes = parsedLine.getTypes();
+  const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
 
-  if (lineMatch) {
-    const lineText = lineMatch[0] || "";
-    const prefix = lineMatch[1] || "";
-    const text = lineMatch[2] || "";
-    const suffix = lineMatch[4] || "";
+  if (
+    paragraphLine &&
+    paragraphLine.context.paragraph &&
+    parsedLineTypes.length === 1
+  ) {
+    const rawText = paragraphLine.context.raw;
 
     const restLines = collectLines(
-      LineContextBuilder.new(lineText)
-        .settextHeading(prefix, text, suffix, 0, false)
+      BlockContextBuilder.new(rawText)
+        .settextHeading("", rawText, "", 0, false)
         .build(),
       stream
     );
 
     if (restLines.length > 0) {
-      const rawLines = [lineText, ...restLines];
-      const level = trim(rawLines[rawLines.length - 1]).match(/=/) ? 1 : 2;
+      const allLines: LineAttributes[] = [
+        { raw: rawText, prefix: "", text: rawText, suffix: "" },
+        ...restLines
+      ];
+      const level = trim(allLines[allLines.length - 1].text).match(/=/) ? 1 : 2;
 
-      const inlineLines = rawLines.slice(0, rawLines.length - 1);
+      // Lines for inline tokens parsing are all except the last line (which is the underline).
+      // Therefore use `line.raw` because prefix/suffix only applies to underline.
+      const inlineLines = allLines
+        .slice(0, allLines.length - 1)
+        .map((line) => line.raw);
 
-      const inlineTokens: string[][][] = shouldParseInlineTokens(state)
-        ? parseInlineLines(inlineLines)
-        : [];
+      const inlineTokens: string[][][] = parseInlineLines(inlineLines);
 
-      for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
-        const lineText = rawLines[lineIndex];
+      for (let lineIndex = 0; lineIndex < allLines.length; lineIndex++) {
+        const rawLine = allLines[lineIndex];
 
         blockTokens.push({
-          lineType: SETTEXT_HEADING_LINE,
-          lineContext: LineContextBuilder.new(lineText)
+          type: SETTEXT_HEADING_BLOCK,
+          context: BlockContextBuilder.new(rawLine.raw)
             .settextHeading(
-              prefix,
-              text,
-              suffix,
+              rawLine.prefix,
+              rawLine.text,
+              rawLine.suffix,
               level,
-              lineIndex === rawLines.length - 1
+              lineIndex === allLines.length - 1
             )
             .build(),
           inlineTokens:
-            lineIndex === rawLines.length - 1 ? [] : inlineTokens[lineIndex]
+            lineIndex === allLines.length - 1 ? [] : inlineTokens[lineIndex]
         });
       }
     }

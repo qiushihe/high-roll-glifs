@@ -1,13 +1,11 @@
-import size from "lodash/fp/size";
-
 import { getRules as getBlockRules } from "../rule/block/rule";
 import { AdaptedStream } from "../stream/adapter";
 import { ParserState } from "./parser";
-import { LineContext } from "./line.context";
+import { BlockContext } from "/src/gfm.parser/parser/block";
 
 export interface ParsedBlock {
-  lineType: string;
-  lineContext: LineContext;
+  type: string;
+  context: BlockContext;
   inlineTokens: string[][];
 }
 
@@ -20,13 +18,12 @@ export const parse: ParseBlockRule = (
   stream: AdaptedStream,
   state: ParserState
 ): ParsedBlock[] => {
-  const blockRules = getBlockRules();
+  const rules = getBlockRules();
   const blocks: ParsedBlock[] = [];
 
-  // Apply block level parsing rules.
-  for (let ruleIndex = 0; ruleIndex < size(blockRules); ruleIndex++) {
-    const blockRule = blockRules[ruleIndex];
-    const ruleBlocks = blockRule.parse(stream, state);
+  for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
+    const rule = rules[ruleIndex];
+    const ruleBlocks = rule.parse(stream, state);
 
     if (ruleBlocks.length > 0) {
       blocks.push(...ruleBlocks);
