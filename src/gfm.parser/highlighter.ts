@@ -229,7 +229,9 @@ class GfmDecorator {
   }
 }
 
-const gfmDecorations = ViewPlugin.fromClass(GfmDecorator).decorations();
+const gfmDecorations = ViewPlugin.fromClass(GfmDecorator, {
+  decorations: get("decorations")
+});
 
 const gfmTheme = EditorView.baseTheme({
   "test-line": {
