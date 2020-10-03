@@ -234,40 +234,34 @@ const gfmDecorations = ViewPlugin.fromClass(GfmDecorator, {
 });
 
 const gfmTheme = EditorView.baseTheme({
-  "test-line": {
-    color: "#ff0000"
-  },
-  "test-mark": {
-    color: "#ff0000"
-  },
-  "md-block-syntax": {
+  "$md-block-syntax": {
     color: "#b0b0b0 !important"
   },
-  "md-code-span": {
+  "$md-code-span": {
     backgroundColor: "#e6e6e6"
   },
-  "md-code-span-tick": {
+  "$md-code-span-tick": {
     color: "#b0b0b0 !important"
   },
-  "md-link-span": {
+  "$md-link-span": {
     color: "#0000ff"
   },
-  "md-link-span-open": {
+  "$md-link-span-open": {
     color: "#b0b0b0 !important"
   },
-  "md-link-span-close": {
+  "$md-link-span-close": {
     color: "#b0b0b0 !important"
   },
-  "md-image-span": {
+  "$md-image-span": {
     color: "#0000ff"
   },
-  "md-image-span-open": {
+  "$md-image-span-open": {
     color: "#b0b0b0 !important"
   },
-  "md-image-span-middle": {
+  "$md-image-span-middle": {
     color: "#b0b0b0 !important"
   },
-  "md-image-span-close": {
+  "$md-image-span-close": {
     color: "#b0b0b0 !important"
   }
 });
