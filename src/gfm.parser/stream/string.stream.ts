@@ -1,8 +1,20 @@
 import flow from "lodash/fp/flow";
 import size from "lodash/fp/size";
+import first from "lodash/fp/first";
+import get from "lodash/fp/get";
 import getOr from "lodash/fp/getOr";
 import cond from "lodash/fp/cond";
 import times from "lodash/fp/times";
+import isArray from "lodash/fp/isArray";
+import stubTrue from "lodash/fp/stubTrue";
+import add from "lodash/fp/add";
+import lte from "lodash/fp/lte";
+import identity from "lodash/fp/identity";
+import map from "lodash/fp/map";
+import filter from "lodash/fp/filter";
+import negate from "lodash/fp/negate";
+import isNil from "lodash/fp/isNil";
+import sortBy from "lodash/fp/sortBy";
 
 export type Tokenizer = (
   string: string,
@@ -13,8 +25,10 @@ export type MapToken = (tokenizer: Tokenizer) => string[][];
 
 export type MapMatch = (
   character: string,
+  matchPosition: number,
+  match: RegExpMatchArray | null,
   position: number,
-  match: RegExpMatchArray | null
+  string: string
 ) => string[];
 
 export type MapUnMatch = (
@@ -24,13 +38,13 @@ export type MapUnMatch = (
 ) => string[];
 
 export type MapRegExp = (
-  regexp: RegExp,
+  regExps: RegExp[] | RegExp,
   unMatchedIterator: MapUnMatch,
   matchedIterator: MapMatch
 ) => string[][];
 
 export type MapAllRegExp = (
-  regexp: RegExp,
+  regExp: RegExp[] | RegExp,
   unMatchedIterator: MapUnMatch,
   matchedIterator: MapMatch
 ) => string[][];
@@ -75,25 +89,46 @@ export const stringStream = (string: string): StringStream => {
   };
 
   const mapRegExp: MapRegExp = (
-    regexp: RegExp,
+    regExps: RegExp[] | RegExp,
     unMatchedIterator: MapUnMatch,
     matchedIterator: MapMatch
   ): string[][] => {
     const result = [];
 
+    // Get remaining substring from the stream.
     const subString = string.slice(stringPosition, Infinity);
-    const matchResult = regexp.exec(subString);
-    const matchedString = getOr("", 0)(matchResult);
-    const matchedStringLength = size(matchedString);
 
+    // Get a match by ...
+    const matchResult: RegExpExecArray | null = flow([
+      // ... ensuring the expression(s) is/are in an array ...
+      cond([
+        [isArray, identity],
+        [stubTrue, (regExp) => [regExp]]
+      ]),
+      // ... then for each expression ...
+      map((regExp: RegExp) => regExp.exec(subString)),
+      // ... exclude non-match expressions ...
+      filter(negate(isNil)),
+      // ... then order all results by the starting index of the match ...
+      sortBy(get("index")),
+      // ... finally get the closest match.
+      first
+    ])(regExps);
+
+    // Get absolute match start index by adding the current position
+    // of the stream to the match's index.
     const matchStartIndex = flow([
       getOr(-1, "index"),
       cond([
-        [(i) => i >= 0, (i) => i + stringPosition],
-        [() => true, (i) => i]
+        [lte(0), add(stringPosition)],
+        [stubTrue, identity]
       ])
     ])(matchResult);
 
+    // Get matched string length.
+    const matchStringLength = flow([first, size])(matchResult);
+
+    // Loop over the matched position range ...
     while (true) {
       if (stringPosition >= stringLength) {
         break;
@@ -101,14 +136,23 @@ export const stringStream = (string: string): StringStream => {
 
       const character = string[stringPosition];
 
+      // ... and invoke either ...
       if (matchStartIndex < 0 || stringPosition < matchStartIndex) {
+        // ... the un-matched iterator, or ...
         result.push(unMatchedIterator(character, stringPosition, string));
         stringPosition += 1;
       } else {
         const matchedStringPosition = stringPosition - matchStartIndex;
-        if (matchedStringPosition < matchedStringLength) {
+        if (matchedStringPosition < matchStringLength) {
+          // ... the matched iterator.
           result.push(
-            matchedIterator(character, matchedStringPosition, matchResult)
+            matchedIterator(
+              character,
+              matchedStringPosition,
+              matchResult,
+              stringPosition,
+              string
+            )
           );
           stringPosition += 1;
         } else {
@@ -121,7 +165,7 @@ export const stringStream = (string: string): StringStream => {
   };
 
   const mapAllRegExp: MapAllRegExp = (
-    regexp: RegExp,
+    regExps: RegExp[] | RegExp,
     unMatchedIterator: MapUnMatch,
     matchedIterator: MapMatch
   ): string[][] => {
@@ -130,7 +174,7 @@ export const stringStream = (string: string): StringStream => {
     while (hasMore()) {
       result = [
         ...result,
-        ...mapRegExp(regexp, unMatchedIterator, matchedIterator)
+        ...mapRegExp(regExps, unMatchedIterator, matchedIterator)
       ];
     }
 
