@@ -89,6 +89,11 @@ const INLINE_DECORATOR: DecorationIndex = flow([
   "list-leader": "list-leader",
   "code-span": "code-span",
   "code-span-tick": "code-span-tick",
+  emphasis: "emphasis",
+  "emphasis-asterisk": "emphasis-asterisk",
+  "emphasis-asterisk-mark": "emphasis-asterisk-mark",
+  "emphasis-underscore": "emphasis-underscore",
+  "emphasis-underscore-mark": "emphasis-underscore-mark",
   "link-span": "link-span",
   "link-span-open": "link-span-open",
   "link-span-close": "link-span-close",
@@ -241,6 +246,21 @@ const gfmTheme = EditorView.baseTheme({
     backgroundColor: "#e6e6e6"
   },
   "$md-code-span-tick": {
+    color: "#b0b0b0 !important"
+  },
+  "$md-emphasis": {},
+  "$md-emphasis-asterisk": {
+    fontWeight: "800"
+  },
+  "$md-emphasis-asterisk-mark": {
+    fontWeight: "800",
+    color: "#b0b0b0 !important"
+  },
+  "$md-emphasis-underscore": {
+    fontStyle: "italic"
+  },
+  "$md-emphasis-underscore-mark": {
+    fontStyle: "italic",
     color: "#b0b0b0 !important"
   },
   "$md-link-span": {
