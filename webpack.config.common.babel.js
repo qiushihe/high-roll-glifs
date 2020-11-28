@@ -1,4 +1,4 @@
-import { resolve as resolvePath } from "path";
+import path from "path";
 
 import { DefinePlugin } from "webpack";
 import { CleanWebpackPlugin } from "clean-webpack-plugin";
@@ -6,11 +6,11 @@ import HtmlWebpackPlugin from "html-webpack-plugin";
 
 export default {
   entry: {
-    bundle: "./src/index.tsx"
+    bundle: path.resolve(__dirname, "src", "index.tsx")
   },
   output: {
     filename: "[name].js",
-    path: resolvePath(__dirname, "build")
+    path: path.resolve(__dirname, "build")
   },
   resolve: {
     extensions: [".js", ".jsx", ".ts", ".tsx"]
@@ -40,7 +40,7 @@ export default {
 
     new HtmlWebpackPlugin({
       excludeChunks: [],
-      template: "./src/template/index.html",
+      template: path.resolve(__dirname, "src", "template", "index.html"),
       filename: "index.html",
       hash: true,
       xhtml: true
