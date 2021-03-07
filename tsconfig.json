@@ -1,0 +1,18 @@
+// This file has no effect on how the compiled code is produced. TS compilation is handled by the
+// `@babel/plugin-transform-typescript` package which completely ignores this file. Therefore, this
+// file is only used by editors/IDEs to configure their language services.
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "/src/*": ["./src/*"],
+      "/test/*": ["./test/*"]
+    }
+  },
+  "include": [
+    "./src/**/*",
+  ]
+}

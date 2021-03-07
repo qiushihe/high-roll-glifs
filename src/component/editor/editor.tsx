@@ -64,7 +64,7 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
         lineNumbers(),
         history(),
         gfmHighlighter(),
-        keymap([...defaultKeymap, ...historyKeymap])
+        keymap.of([...defaultKeymap, ...historyKeymap])
       ]
     });
 

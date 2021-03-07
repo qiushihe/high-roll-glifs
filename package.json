@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/qiushihe/high-roll-glifs",
   "dependencies": {
-    "@codemirror/next": "^0.14.0",
+    "@codemirror/next": "^0.16.0",
     "bluebird": "^3.5.5",
     "lodash": "^4.17.15",
     "prop-types": "^15.7.2",

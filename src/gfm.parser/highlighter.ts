@@ -5,6 +5,8 @@ import keys from "lodash/fp/keys";
 import reduce from "lodash/fp/reduce";
 // import includes from "lodash/fp/includes";
 
+import { Extension } from "@codemirror/next/state";
+
 import {
   Decoration,
   DecorationSet,
@@ -15,8 +17,6 @@ import {
   Range
   // WidgetType
 } from "@codemirror/next/view";
-
-import { Extension } from "@codemirror/next/state";
 
 import {
   ATX_HEADING_BLOCK,
@@ -115,16 +115,20 @@ class GfmDecorator {
   decorations: DecorationSet;
 
   constructor(view: EditorView) {
-    this.decorations = this.getDeco(view);
+    this.decorations = this.updateDecorations(view);
+  }
+
+  getDecorations(): DecorationSet {
+    return this.decorations;
   }
 
   update(update: ViewUpdate): void {
     if (update.docChanged || update.selectionSet || update.viewportChanged) {
-      this.decorations = this.getDeco(update.view);
+      this.decorations = this.updateDecorations(update.view);
     }
   }
 
-  getDeco(view: EditorView): DecorationSet {
+  updateDecorations(view: EditorView): DecorationSet {
     const deco: Range<Decoration>[] = [];
 
     const viewport = view.viewport;
@@ -135,8 +139,7 @@ class GfmDecorator {
 
     const viewportLines = [];
     for (let i = startLineNumber; i <= endLineNumber; i++) {
-      const lineText = view.state.doc.line(i).slice();
-      viewportLines.push(lineText);
+      viewportLines.push(view.state.doc.line(i).text);
     }
 
     const state: ParserState = {};
@@ -234,11 +237,11 @@ class GfmDecorator {
   }
 }
 
-const gfmDecorations = ViewPlugin.fromClass(GfmDecorator, {
-  decorations: get("decorations")
+const decorations = ViewPlugin.fromClass(GfmDecorator, {
+  decorations: (decorator) => decorator.getDecorations()
 });
 
-const gfmTheme = EditorView.baseTheme({
+const theme = EditorView.baseTheme({
   "$md-block-syntax": {
     color: "#b0b0b0 !important"
   },
@@ -286,4 +289,4 @@ const gfmTheme = EditorView.baseTheme({
   }
 });
 
-export default (): Extension[] => [gfmTheme, gfmDecorations];
+export default (): Extension[] => [theme, decorations];
