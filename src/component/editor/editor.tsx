@@ -53,6 +53,7 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
       // doc: "one\n\n![two three](http://four.com/five.png)\n\nsix",
       // doc: "one\n\ntwo <http://three.com/four> five\n\nsix",
       // doc: "one **two ___three *half* four___ five** six",
+      // doc: ["*   test1", "", "    test2"].join("\n"),
       doc: [
         "zero\n",
         "one **two three** four",

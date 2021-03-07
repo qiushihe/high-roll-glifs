@@ -12,7 +12,7 @@ import {
 } from "../../parser";
 
 const collectLines = (
-  lineContext: BlockContext,
+  blockContext: BlockContext,
   stream: AdaptedStream
 ): string[][] => {
   const lines: string[][] = [];

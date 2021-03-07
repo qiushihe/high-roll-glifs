@@ -1,8 +1,19 @@
+import flow from "lodash/fp/flow";
 import size from "lodash/fp/size";
+import includes from "lodash/fp/includes";
+import times from "lodash/fp/times";
+import constant from "lodash/fp/constant";
+import join from "lodash/fp/join";
 
-import { BULLET_LIST_BLOCK, ORDERED_LIST_BLOCK } from "./type";
-import { LIST_ITEM_LINE, PARAGRAPH_LINE } from "../line/type";
 import { AdaptedStream } from "../../stream/adapter";
+
+import {
+  LIST_ITEM_LINE,
+  PARAGRAPH_LINE,
+  INDENTED_CODE_LINE,
+  EMPTY_LINE,
+  BLANK_LINE
+} from "../line/type";
 
 import {
   ParseBlockRule,
@@ -12,6 +23,8 @@ import {
   parseLine,
   parseInlineLines
 } from "../../parser";
+
+import { BULLET_LIST_BLOCK, ORDERED_LIST_BLOCK } from "./type";
 
 type ListItemAttributes = {
   lineType: string;
@@ -106,9 +119,101 @@ const getBlockContext = (
   }
 };
 
+const isLineCollectable = (
+  blockContext: BlockContext,
+  stream: AdaptedStream,
+  lookAheadOffset: number,
+  lookAheadAgain?: boolean
+): [boolean, string] => {
+  const lookAheadStream = stream.slice(lookAheadOffset);
+  const parsedLine = parseLine(lookAheadStream.text());
+  const parsedLineTypes = parsedLine.getTypes();
+
+  // If the look ahead line is only match 1 type and that type is paragraph ...
+  if (
+    parsedLineTypes.length === 1 &&
+    includes(PARAGRAPH_LINE)(parsedLineTypes)
+  ) {
+    const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
+    // ... then collect the line.
+    return [true, paragraphLine.context.raw];
+  }
+  // If the look ahead line is matching indented code line ...
+  else if (includes(INDENTED_CODE_LINE)(parsedLineTypes)) {
+    const indentedCodeLine = parsedLine.getLineByType(INDENTED_CODE_LINE);
+    const { raw, list } = blockContext;
+
+    if (indentedCodeLine && list) {
+      const { leader } = list;
+
+      // ... calculate effective indentation of list content ...
+      const dots = flow([times(constant(".")), join("")])(leader);
+      const spaces = flow([times(constant(" ")), join("")])(leader);
+      const listIndentsMatch = raw
+        .replace(new RegExp(`^${dots}`, "g"), spaces)
+        .match(/^\s*/);
+      const lineIndentsMatch = lookAheadStream.text().match(/^\s*/);
+
+      if (listIndentsMatch && lineIndentsMatch) {
+        const listIndents = listIndentsMatch[0].length;
+        const lineIndents = lineIndentsMatch[0].length;
+
+        // ... if the look ahead line's content indentation matches the list's effective
+        // indentation ...
+        if (lineIndents === listIndents) {
+          // ... then collect the line.
+          return [true, indentedCodeLine.context.raw];
+        } else {
+          return [false, null];
+        }
+      } else {
+        return [false, null];
+      }
+    } else {
+      return [false, null];
+    }
+  }
+  // If the look head line if an empty/blank line ...
+  else if (
+    !lookAheadAgain && // Break recursion after 1 level so only further look ahead at most 1 line.
+    (includes(EMPTY_LINE)(parsedLineTypes) ||
+      includes(BLANK_LINE)(parsedLineTypes))
+  ) {
+    // Technically we should look ahead indefinitely to find collectable lines but in practice that
+    // is both too expensive of an operation, and rarely needed as most people wouldn't try to
+    // insert more than 1 blank/empty line between list content lines anyway. And even if someone
+    // does insert more than 1 blank/empty line between list content, it should be pretty obvious
+    // to them why it wouldn't work anyway, so for now it's okay to only look ahead 1 line.
+
+    // ... further look ahead ...
+    const lookAheadAgainStream = stream.slice(lookAheadOffset + 1);
+
+    if (lookAheadAgainStream.ended()) {
+      return [false, null];
+    } else {
+      // ... and if the yet next line is collectable ...
+      const [isNextLineCollectable] = isLineCollectable(
+        blockContext,
+        stream,
+        lookAheadOffset + 1,
+        true
+      );
+
+      if (isNextLineCollectable) {
+        // ... then collect the current line.
+        return [true, lookAheadStream.text()];
+      } else {
+        return [false, null];
+      }
+    }
+  } else {
+    return [false, null];
+  }
+};
+
 const collectLines = (
   lineType: string,
-  lineContext: BlockContext,
+  blockContext: BlockContext,
   stream: AdaptedStream
 ): string[] => {
   const lines: string[] = [];
@@ -122,16 +227,14 @@ const collectLines = (
       break;
     }
 
-    const parsedLine = parseLine(lookAheadStream.text());
-    const parsedLineTypes = parsedLine.getTypes();
-    const paragraphLine = parsedLine.getLineByType(PARAGRAPH_LINE);
+    const [isCollectable, line] = isLineCollectable(
+      blockContext,
+      stream,
+      lookAheadOffset
+    );
 
-    if (
-      paragraphLine &&
-      paragraphLine.context.paragraph &&
-      parsedLineTypes.length === 1
-    ) {
-      lines.push(paragraphLine.context.raw);
+    if (isCollectable) {
+      lines.push(line);
       lookAheadOffset += 1;
     } else {
       break;

@@ -21,7 +21,7 @@ interface LineAttributes {
 }
 
 const collectLines = (
-  lineContext: BlockContext,
+  blockContext: BlockContext,
   stream: AdaptedStream
 ): LineAttributes[] => {
   const lines: LineAttributes[] = [];

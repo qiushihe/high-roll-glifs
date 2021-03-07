@@ -11,7 +11,7 @@ import {
   parseInlineLines
 } from "../../parser";
 
-const collectLines = (lineContext: BlockContext, stream: AdaptedStream) => {
+const collectLines = (blockContext: BlockContext, stream: AdaptedStream) => {
   const lines: string[] = [];
 
   let lookAheadOffset = 1;
