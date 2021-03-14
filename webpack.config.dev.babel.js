@@ -9,6 +9,7 @@ export default merge(common, {
     publicPath: "/"
   },
   devServer: {
+    port: 3000,
     disableHostCheck: true,
     writeToDisk: true,
     historyApiFallback: {

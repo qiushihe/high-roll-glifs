@@ -19,7 +19,6 @@ export default {
     rules: [
       {
         test: /\.(jsx?|tsx?)$/,
-        // exclude: /node_modules/,
         exclude: (modulePath) => {
           return modulePath.startsWith(path.resolve(__dirname, "node_modules")) &&
             !modulePath.startsWith(path.resolve(__dirname, "node_modules", "@codemirror"));
