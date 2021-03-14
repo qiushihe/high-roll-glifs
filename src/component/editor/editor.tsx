@@ -1,12 +1,12 @@
 import React, { PureComponent, ReactNode } from "react";
 import PropTypes, { InferProps } from "prop-types";
 
-import { EditorView } from "@codemirror/next/view";
-import { EditorState } from "@codemirror/next/state";
-import { keymap } from "@codemirror/next/view";
-import { history, historyKeymap } from "@codemirror/next/history";
-import { lineNumbers } from "@codemirror/next/gutter";
-import { defaultKeymap } from "@codemirror/next/commands";
+import { EditorView } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
+import { history, historyKeymap } from "@codemirror/history";
+import { lineNumbers } from "@codemirror/gutter";
+import { defaultKeymap } from "@codemirror/commands";
 
 import { highlighter as gfmHighlighter } from "/src/gfm.parser";
 
@@ -53,7 +53,8 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
       // doc: "one\n\n![two three](http://four.com/five.png)\n\nsix",
       // doc: "one\n\ntwo <http://three.com/four> five\n\nsix",
       // doc: "one **two ___three *half* four___ five** six",
-      // doc: ["*   test1", "", "    test2"].join("\n"),
+      // doc: ["*   item", "    ", "    also item", "", "not item"].join("\n"),
+      // doc: ["*   test", " ", "        code block"].join("\n"),
       doc: [
         "zero\n",
         "one **two three** four",
