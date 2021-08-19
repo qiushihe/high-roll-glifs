@@ -27,25 +27,25 @@ export const adaptLines = (rawText: string): AdaptedStream => {
   return { text, ended, match, slice };
 };
 
-export const testBlockAcceptance = (rule: BlockRule) => (
-  expectations: [boolean, string, ParserState?][]
-): void => {
-  forEach(([shouldPass, input, state = {}]) => {
-    const result = rule.parse(adaptLines(input), state);
-    const stateDescription = isEmpty(state)
-      ? ""
-      : ` with ${JSON.stringify(state)}`;
+export const testBlockAcceptance =
+  (rule: BlockRule) =>
+  (expectations: [boolean, string, ParserState?][]): void => {
+    forEach(([shouldPass, input, state = {}]) => {
+      const result = rule.parse(adaptLines(input), state);
+      const stateDescription = isEmpty(state)
+        ? ""
+        : ` with ${JSON.stringify(state)}`;
 
-    if (shouldPass) {
-      it(`should accept ${JSON.stringify(input)}${stateDescription}`, () => {
-        expect(result).to.not.be.empty;
-      });
-    } else {
-      it(`should not accept ${JSON.stringify(
-        input
-      )}${stateDescription}`, () => {
-        expect(result).to.be.empty;
-      });
-    }
-  })(expectations);
-};
+      if (shouldPass) {
+        it(`should accept ${JSON.stringify(input)}${stateDescription}`, () => {
+          expect(result).to.not.be.empty;
+        });
+      } else {
+        it(`should not accept ${JSON.stringify(
+          input
+        )}${stateDescription}`, () => {
+          expect(result).to.be.empty;
+        });
+      }
+    })(expectations);
+  };

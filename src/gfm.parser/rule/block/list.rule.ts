@@ -69,15 +69,8 @@ const getListItemAttributes = (
 const getBlockContext = (
   lineMatch: ListItemAttributes
 ): BlockContext | null => {
-  const {
-    lineType,
-    lineText,
-    prefix,
-    digits,
-    marker,
-    spaces,
-    content
-  } = lineMatch;
+  const { lineType, lineText, prefix, digits, marker, spaces, content } =
+    lineMatch;
 
   // ... and if `content` is not empty ...
   if (content.length > 0) {
