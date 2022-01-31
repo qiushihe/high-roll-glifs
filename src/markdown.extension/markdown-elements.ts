@@ -1,7 +1,7 @@
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { Range } from "@codemirror/rangeset";
-import { SyntaxNode } from "lezer-tree";
+import { SyntaxNode } from "@lezer/common";
 
 import {
   StateField,
@@ -59,6 +59,8 @@ const composeTransactions = (
   }, null);
 };
 
+// TODO: Fix the bug where starting text entry on an empty line would cause the
+//       decorations on the following block elements to be cleared.
 const iterateRootNodesInRange = (
   state: EditorState,
   range: NumericRange,
@@ -68,10 +70,18 @@ const iterateRootNodesInRange = (
   // position of the given range.
   const tree = syntaxTree(state);
 
+  // Normalize the given `range` (which may start and end in the middle of some
+  // lines) to "block range" that always starts and ends at the start/end of
+  // their respective lines.
+  const blockRange = {
+    from: state.doc.lineAt(range.from).from,
+    to: state.doc.lineAt(range.to).to
+  };
+
   // Creator a cursor ...
   const cursor = tree.cursor();
   // ... then move it to the start of the range.
-  cursor.moveTo(range.from);
+  cursor.moveTo(blockRange.from);
 
   // Before processing, we have to ensure the cursor is pointing to a top level
   // block element. This means we can't have to cursor pointing to the root
@@ -88,11 +98,11 @@ const iterateRootNodesInRange = (
 
     cursorOffset += -1;
 
-    if (range.from + cursorOffset <= 0) {
+    if (blockRange.from + cursorOffset <= 0) {
       break;
     }
 
-    cursor.moveTo(range.from - cursorOffset);
+    cursor.moveTo(blockRange.from - cursorOffset);
   }
 
   // Reset cursor offset in case we have to nudge the cursor in the other
@@ -108,11 +118,14 @@ const iterateRootNodesInRange = (
 
     cursorOffset += 1;
 
-    if (range.from + cursorOffset > Math.min(range.to, state.doc.length)) {
+    if (
+      blockRange.from + cursorOffset >
+      Math.min(blockRange.to, state.doc.length)
+    ) {
       break;
     }
 
-    cursor.moveTo(range.from + cursorOffset);
+    cursor.moveTo(blockRange.from + cursorOffset);
   }
 
   // Finally, continue to "go up" with the cursor until the cursor is pointing
@@ -136,7 +149,7 @@ const iterateRootNodesInRange = (
       }
 
       // Also stop processing if we reached the end of the range.
-      if (cursor.node.from > range.to) {
+      if (cursor.node.from > blockRange.to) {
         break;
       }
     }
@@ -183,27 +196,6 @@ const updateDecorations = (
   decorationSets: DecorationSet[],
   transaction: PlainTransaction
 ): DecorationSet[] => {
-  const blockTypes: string[] = [];
-  const cursor = syntaxTree(transaction.newState).cursor();
-
-  // Use a cursor from the final transaction to obtain types from all top level
-  // blocks.
-  if (cursor.node.type.name === "Document" && cursor.firstChild()) {
-    while (true) {
-      for (
-        let line = transaction.newState.doc.lineAt(cursor.node.from).number;
-        line <= transaction.newState.doc.lineAt(cursor.node.to).number;
-        line++
-      ) {
-        blockTypes[line] = cursor.node.type.name;
-      }
-
-      if (!cursor.nextSibling()) {
-        break;
-      }
-    }
-  }
-
   const oldState = transaction.oldState;
   const newState = transaction.newState;
 
@@ -222,7 +214,7 @@ const updateDecorations = (
 
   // Before applying changes in the transaction to `decorationSet`, we have
   // to remove any decoration from the `changedLinesRanges.from` range of
-  // lines so we don't end up with duplicated decorations.
+  // lines, so we don't end up with duplicated decorations.
   for (
     let rangeIndex = 0;
     rangeIndex < changedLinesRanges.length;
@@ -231,26 +223,14 @@ const updateDecorations = (
     const { from: beforeRange } = changedLinesRanges[rangeIndex];
 
     iterateRootNodesInRange(oldState, beforeRange, (node) => {
-      decorationSets = decorationSets.map((decorationSet) => {
-        const fromLine = oldState.doc.lineAt(node.from);
-        const toLine = oldState.doc.lineAt(node.to);
+      const fromLine = oldState.doc.lineAt(node.from);
+      const toLine = oldState.doc.lineAt(node.to);
 
+      decorationSets = decorationSets.map((decorationSet) => {
         decorationSet = decorationSet.update({
           filterFrom: fromLine.from,
           filterTo: toLine.to,
-          filter: (from, to) => {
-            const decorationFromLine = oldState.doc.lineAt(from);
-            const decorationToLine = oldState.doc.lineAt(to);
-
-            // Return `true` -- keep -- decorations that are either ended above
-            // the range, or started below the range.
-            // In other words: return `false` -- discard -- decorations that
-            // are in, or partially in the range.
-            return (
-              decorationToLine.number < fromLine.number ||
-              decorationFromLine.number > toLine.number
-            );
-          }
+          filter: () => false
         });
 
         return decorationSet;
@@ -274,25 +254,27 @@ const updateDecorations = (
     rangeIndex++
   ) {
     const { to: afterRange } = changedLinesRanges[rangeIndex];
-    const fromLine = newState.doc.lineAt(afterRange.from);
-    const toLine = newState.doc.lineAt(afterRange.to);
 
-    // Update decorations for top level block types.
+    // Since all decorations for the affected ranges were removed at the start,
+    // we now have to redecorate the root level block elements.
     // Use layer `0` for line level block type decorations.
     if (!decorationSets[0]) {
       decorationSets[0] = Decoration.none;
     }
     const newDecorations: Range<Decoration>[] = [];
-    for (let line = fromLine.number; line <= toLine.number; line++) {
-      const blockType = blockTypes[line];
-      if (blockType) {
+    iterateRootNodesInRange(newState, afterRange, (node) => {
+      const blockType = node.type.name;
+      const fromLine = newState.doc.lineAt(node.from);
+      const toLine = newState.doc.lineAt(node.to);
+
+      for (let curLine = fromLine.number; curLine <= toLine.number; curLine++) {
         newDecorations.push(
           getLineTypeDecoration(blockType).range(
-            transaction.newState.doc.line(line).from
+            transaction.newState.doc.line(curLine).from
           )
         );
       }
-    }
+    });
     if (newDecorations.length > 0) {
       decorationSets[0] = decorationSets[0].update({
         add: newDecorations
@@ -315,7 +297,7 @@ const updateDecorations = (
     });
   }
 
-  // Reverse the decoration set before the inner-most layer (which has the
+  // Reverse the decoration set before the innermost layer (which has the
   // highest depth) needs to be applied first.
   return decorationSets.reverse();
 };
@@ -328,7 +310,15 @@ const stateField = () => {
     update: (decorationSets, transaction) => {
       const tree = syntaxTree(transaction.state);
 
+      // TODO: Maybe this part needs some updates/comments:
+      //       * Why use `>=` when comparing `tree.length` and `transaction.state.doc.length`?
+      //       * Why not check pending transaction first?
+
       if (transaction.docChanged) {
+        // If the raw document that's being loaded is very large, then the doc
+        // length would be smaller than the tree length. And in that case we
+        // queue the transaction to wait until the doc catches up with the tree
+        // before processing.
         if (tree.length >= transaction.state.doc.length) {
           decorationSets = updateDecorations(
             decorationSets,

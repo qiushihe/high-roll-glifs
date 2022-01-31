@@ -20,7 +20,9 @@ class Inspector {
 
     return selectionRanges.map((selectionRange) => {
       const line = state.doc.lineAt(selectionRange.head);
-      const position = line.number + ":" + (selectionRange.head - line.from);
+      const position = `${line.number}:${selectionRange.head - line.from} | ${
+        selectionRange.head
+      }`;
 
       const cursor = syntaxTree(state).cursor(selectionRange.head);
       const paths = [cursor.type.name];
