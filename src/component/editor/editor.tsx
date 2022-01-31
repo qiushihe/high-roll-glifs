@@ -1,16 +1,17 @@
-import React, { PureComponent, ReactNode } from "react";
+import React, { ChangeEvent, PureComponent, ReactNode } from "react";
 import PropTypes, { InferProps } from "prop-types";
+import { EditorView } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
+import { history, historyKeymap } from "@codemirror/history";
+import { lineNumbers } from "@codemirror/gutter";
+import { defaultKeymap } from "@codemirror/commands";
+import { markdown } from "@codemirror/lang-markdown";
 
-import { EditorView } from "@codemirror/next/view";
-import { EditorState } from "@codemirror/next/state";
-import { keymap } from "@codemirror/next/view";
-import { history, historyKeymap } from "@codemirror/next/history";
-import { lineNumbers } from "@codemirror/next/gutter";
-import { defaultKeymap } from "@codemirror/next/commands";
+import { markdownExtension, MarkdownProcessor } from "/src/markdown.extension";
+import { getTestDocNames, getTestDocByName } from "/src/test-doc";
 
-import { highlighter as gfmHighlighter } from "/src/gfm.parser";
-
-import { Base } from "./editor.style";
+import { Base, EditorControls, EditorContainer } from "./editor.style";
 
 const propTypes = {
   onChange: PropTypes.func
@@ -20,11 +21,15 @@ const defaultProps = {
   onChange: (): void => {}
 };
 
-class Editor extends PureComponent<InferProps<typeof propTypes>> {
+type stateTypes = {
+  testDocName: string;
+};
+
+class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
   static propTypes = propTypes;
   static defaultProps = defaultProps;
 
-  rootRef: React.RefObject<HTMLDivElement>;
+  editorContainerRef: React.RefObject<HTMLDivElement>;
   editorView: EditorView | null;
   editorState: EditorState | null;
 
@@ -34,51 +39,93 @@ class Editor extends PureComponent<InferProps<typeof propTypes>> {
   ) {
     super(props, ctx);
 
-    this.rootRef = React.createRef();
+    this.state = {
+      testDocName: ""
+    };
+
+    this.editorContainerRef = React.createRef();
     this.editorState = null;
     this.editorView = null;
+
+    this.handleTestDocumentSelectionChange =
+      this.handleTestDocumentSelectionChange.bind(this);
   }
 
   componentDidMount(): void {
+    const processor = MarkdownProcessor.getDefaultInstance();
+
     this.editorState = EditorState.create({
-      // doc: "# one\ntwo\n### three\n\nfour",
-      // doc: "on`e two\nth`ree fo<ur\nfiv>e six",
-      // doc: "one\n> tw`o\nth`re`e\n> fo`ur\nfive\nsix\n\nseven",
-      // doc: "one\n```\ntwo\nthree\nfour\n````\nfive",
-      // doc: "one\n    two\n    three\n    four\nfive",
-      // doc: "one\n* two\nthree\nfour\n5. five\nsix\nseven\n  \neight\n\nnine",
-      // doc: "one\n\ntwo three\nfive six\n------\nseven",
-      // doc: "one\n\n------\n\ntwo",
-      // doc: "one\n\n```\ntwo\nthree\n`````\n\n    four\n    five\n\nsix",
-      // doc: "one\n\n![two three](http://four.com/five.png)\n\nsix",
-      // doc: "one\n\ntwo <http://three.com/four> five\n\nsix",
-      // doc: "one **two ___three *half* four___ five** six",
-      // doc: ["*   test1", "", "    test2"].join("\n"),
-      doc: [
-        "zero\n",
-        "one **two three** four",
-        "five ___six seven___ eight **nine __ten",
-        "eleven__ twelve thirteen** fourteen\n",
-        "sixteen"
-      ].join("\n"),
+      doc: "",
       extensions: [
         lineNumbers(),
         history(),
-        gfmHighlighter(),
+        markdown({ addKeymap: false }),
+        markdownExtension(processor),
         keymap.of([...defaultKeymap, ...historyKeymap])
       ]
     });
 
-    if (this.rootRef.current) {
+    if (this.editorContainerRef.current) {
       this.editorView = new EditorView({
         state: this.editorState,
-        parent: this.rootRef.current
+        parent: this.editorContainerRef.current
       });
+    }
+
+    this.setState({
+      testDocName: window.localStorage.getItem("hrg-editor-test-doc-name") || ""
+    });
+  }
+
+  componentDidUpdate(_: never, prevState: Readonly<stateTypes>): void {
+    const { testDocName: testDocNameWas } = prevState;
+    const { testDocName } = this.state;
+
+    if (testDocNameWas !== testDocName) {
+      this.loadTestDoc({ docName: testDocName });
     }
   }
 
+  handleTestDocumentSelectionChange(evt: ChangeEvent<HTMLSelectElement>): void {
+    const testDocName = evt.target.value;
+    window.localStorage.setItem("hrg-editor-test-doc-name", testDocName);
+    this.setState({ testDocName });
+  }
+
+  loadTestDoc({ docName }: { docName: string }): void {
+    this.editorView.dispatch({
+      changes: {
+        from: 0,
+        to: this.editorView.state.doc.length,
+        insert: getTestDocByName(docName) || ""
+      }
+    });
+  }
+
   render(): ReactNode {
-    return <Base ref={this.rootRef} />;
+    const { testDocName } = this.state;
+
+    return (
+      <Base>
+        <EditorControls>
+          <label>
+            Test Document: &nbsp;
+            <select
+              value={testDocName}
+              onChange={this.handleTestDocumentSelectionChange}
+            >
+              <option value="empty">- none -</option>
+              {getTestDocNames().map((docKey) => (
+                <option key={docKey} value={docKey}>
+                  {docKey}
+                </option>
+              ))}
+            </select>
+          </label>
+        </EditorControls>
+        <EditorContainer ref={this.editorContainerRef} />
+      </Base>
+    );
   }
 }
 

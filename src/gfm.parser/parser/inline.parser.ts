@@ -58,74 +58,73 @@ export const parseLines = (lines: string[]): string[][][] => {
 // 2 Mana - 3 Attack / 2 Toughness
 // Battlecry: Combine multiple layers of inline styles into a single layer.
 //            Also resolve any inline style conflicts at the same time.
-export const recombobulator = (
-  lineLength: number,
-  conflictMap: { [key: string]: string[] }
-) => (layers: string[][][]): string[][] => {
-  const result: string[][] = Array(lineLength).fill([]);
+export const recombobulator =
+  (lineLength: number, conflictMap: { [key: string]: string[] }) =>
+  (layers: string[][][]): string[][] => {
+    const result: string[][] = Array(lineLength).fill([]);
 
-  if (layers.length > 0) {
-    // Loop over the 2D array of inline styles and combine them into a 1D array.
-    for (let cIndex = 0; cIndex < lineLength; cIndex++) {
-      for (let lIndex = 0; lIndex < layers.length; lIndex++) {
-        result[cIndex] = [...result[cIndex], ...layers[lIndex][cIndex]];
+    if (layers.length > 0) {
+      // Loop over the 2D array of inline styles and combine them into a 1D array.
+      for (let cIndex = 0; cIndex < lineLength; cIndex++) {
+        for (let lIndex = 0; lIndex < layers.length; lIndex++) {
+          result[cIndex] = [...result[cIndex], ...layers[lIndex][cIndex]];
+        }
+      }
+
+      // Loop over the now 1D array of inline styles ...
+      for (let index = 0; index < lineLength; index++) {
+        // Find the list of inline tokens for the current character that could potentially
+        // conflict with other inline tokens.
+        const conflictors = intersection(result[index])(keys(conflictMap));
+
+        // For each of those potentially conflicting inline tokens ...
+        conflictors.forEach((conflictor) => {
+          // ... get the list of inline tokens that the inline token would conflict with.
+          const conflictees = intersection(result[index])(
+            conflictMap[conflictor]
+          );
+
+          // Remove conflicting inline tokens from the current index.
+          result[index] = without(conflictees)(result[index]);
+
+          // Loop over characters backward from before the current index ...
+          let bIndex = index - 1;
+          while (true) {
+            if (
+              // If ...
+              // * The loop reached the start of the array; Or ...
+              bIndex < 0 ||
+              // * The preceding index has no matching conflicting inline tokens ...
+              intersection(conflictees)(result[bIndex]).length <= 0
+            ) {
+              break; // ... then stop.
+            }
+
+            // Remove conflicting inline tokens from preceding indices.
+            result[bIndex] = without(conflictees)(result[bIndex]);
+            bIndex += -1;
+          }
+
+          // Loop over characters forward from after the current index ...
+          let fIndex = index + 1;
+          while (true) {
+            if (
+              // If ...
+              // * The loop reached the end of the array; Or ...
+              fIndex >= lineLength ||
+              // * The subsequent index has no matching conflicting inline tokens ...
+              intersection(conflictees)(result[fIndex]).length <= 0
+            ) {
+              break; // ... then stop.
+            }
+
+            // Remove conflicting inline tokens from subsequent indices.
+            result[fIndex] = without(conflictees)(result[fIndex]);
+            fIndex += 1;
+          }
+        });
       }
     }
 
-    // Loop over the now 1D array of inline styles ...
-    for (let index = 0; index < lineLength; index++) {
-      // Find the list of inline tokens for the current character that could potentially
-      // conflict with other inline tokens.
-      const conflictors = intersection(result[index])(keys(conflictMap));
-
-      // For each of those potentially conflicting inline tokens ...
-      conflictors.forEach((conflictor) => {
-        // ... get the list of inline tokens that the inline token would conflict with.
-        const conflictees = intersection(result[index])(
-          conflictMap[conflictor]
-        );
-
-        // Remove conflicting inline tokens from the current index.
-        result[index] = without(conflictees)(result[index]);
-
-        // Loop over characters backward from before the current index ...
-        let bIndex = index - 1;
-        while (true) {
-          if (
-            // If ...
-            // * The loop reached the start of the array; Or ...
-            bIndex < 0 ||
-            // * The preceding index has no matching conflicting inline tokens ...
-            intersection(conflictees)(result[bIndex]).length <= 0
-          ) {
-            break; // ... then stop.
-          }
-
-          // Remove conflicting inline tokens from preceding indices.
-          result[bIndex] = without(conflictees)(result[bIndex]);
-          bIndex += -1;
-        }
-
-        // Loop over characters forward from after the current index ...
-        let fIndex = index + 1;
-        while (true) {
-          if (
-            // If ...
-            // * The loop reached the end of the array; Or ...
-            fIndex >= lineLength ||
-            // * The subsequent index has no matching conflicting inline tokens ...
-            intersection(conflictees)(result[fIndex]).length <= 0
-          ) {
-            break; // ... then stop.
-          }
-
-          // Remove conflicting inline tokens from subsequent indices.
-          result[fIndex] = without(conflictees)(result[fIndex]);
-          fIndex += 1;
-        }
-      });
-    }
-  }
-
-  return result;
-};
+    return result;
+  };

@@ -5,18 +5,17 @@ import keys from "lodash/fp/keys";
 import reduce from "lodash/fp/reduce";
 // import includes from "lodash/fp/includes";
 
-import { Extension } from "@codemirror/next/state";
+import { Extension } from "@codemirror/state";
 
 import {
   Decoration,
   DecorationSet,
-  themeClass,
   ViewPlugin,
   EditorView,
   ViewUpdate,
   Range
   // WidgetType
-} from "@codemirror/next/view";
+} from "@codemirror/view";
 
 import {
   ATX_HEADING_BLOCK,
@@ -46,7 +45,7 @@ const LINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.line({
-          attributes: { class: themeClass(`md-${mapping[key]}`) }
+          attributes: { class: `cm-md-${mapping[key]}` }
         })
       }),
       {}
@@ -72,7 +71,7 @@ const INLINE_DECORATOR: DecorationIndex = flow([
       (result: DecorationIndex, key: string) => ({
         ...result,
         [key]: Decoration.mark({
-          attributes: { class: themeClass(`md-${mapping[key]}`) }
+          attributes: { class: `cm-md-${mapping[key]}` }
         })
       }),
       {}
@@ -242,49 +241,49 @@ const decorations = ViewPlugin.fromClass(GfmDecorator, {
 });
 
 const theme = EditorView.baseTheme({
-  "$md-block-syntax": {
+  ".cm-md-block-syntax": {
     color: "#b0b0b0 !important"
   },
-  "$md-code-span": {
+  ".cm-md-code-span": {
     backgroundColor: "#e6e6e6"
   },
-  "$md-code-span-tick": {
+  ".cm-md-code-span-tick": {
     color: "#b0b0b0 !important"
   },
-  "$md-emphasis": {},
-  "$md-emphasis-asterisk": {
+  ".cm-md-emphasis": {},
+  ".cm-md-emphasis-asterisk": {
     fontWeight: "800"
   },
-  "$md-emphasis-asterisk-mark": {
+  ".cm-md-emphasis-asterisk-mark": {
     fontWeight: "800",
     color: "#b0b0b0 !important"
   },
-  "$md-emphasis-underscore": {
+  ".cm-md-emphasis-underscore": {
     fontStyle: "italic"
   },
-  "$md-emphasis-underscore-mark": {
+  ".cm-md-emphasis-underscore-mark": {
     fontStyle: "italic",
     color: "#b0b0b0 !important"
   },
-  "$md-link-span": {
+  ".cm-md-link-span": {
     color: "#0000ff"
   },
-  "$md-link-span-open": {
+  ".cm-md-link-span-open": {
     color: "#b0b0b0 !important"
   },
-  "$md-link-span-close": {
+  ".cm-md-link-span-close": {
     color: "#b0b0b0 !important"
   },
-  "$md-image-span": {
+  ".cm-md-image-span": {
     color: "#0000ff"
   },
-  "$md-image-span-open": {
+  ".cm-md-image-span-open": {
     color: "#b0b0b0 !important"
   },
-  "$md-image-span-middle": {
+  ".cm-md-image-span-middle": {
     color: "#b0b0b0 !important"
   },
-  "$md-image-span-close": {
+  ".cm-md-image-span-close": {
     color: "#b0b0b0 !important"
   }
 });
