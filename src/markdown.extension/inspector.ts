@@ -24,7 +24,7 @@ class Inspector {
         selectionRange.head
       }`;
 
-      const cursor = syntaxTree(state).cursor(selectionRange.head);
+      const cursor = syntaxTree(state).cursor().moveTo(selectionRange.head);
       const paths = [cursor.type.name];
 
       while (cursor.parent()) {
