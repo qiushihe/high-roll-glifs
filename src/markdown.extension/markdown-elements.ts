@@ -18,8 +18,6 @@ import {
 
 type NumericRange = { from: number; to: number };
 
-type ChangedLinesRange = { from: NumericRange; to: NumericRange };
-
 type PlainTransaction = {
   oldState: EditorState;
   newState: EditorState;
@@ -258,12 +256,12 @@ const decorateNode = (
 const updateDecorations = (
   decorationSets: DecorationSet[],
   transaction: PlainTransaction
-): DecorationSet[] => {
+) => {
   const oldState = transaction.oldState;
   const newState = transaction.newState;
 
   // Used to keep track of the range of lines affected by the transaction.
-  const changedLinesRanges: ChangedLinesRange[] = [];
+  const changedLinesRanges: { from: NumericRange; to: NumericRange }[] = [];
 
   transaction.changes.iterChangedRanges(
     (beforeStart, beforeEnd, afterStart, afterEnd) => {
@@ -377,7 +375,7 @@ const updateDecorations = (
     });
   }
 
-  // Reverse the decoration set before the innermost layer (which has the
+  // Reverse the decoration set because the innermost layer (which has the
   // highest depth) needs to be applied first.
   return decorationSets.reverse();
 };
@@ -388,40 +386,34 @@ const stateField = () => {
   return StateField.define<DecorationSet[]>({
     create: () => [],
     update: (decorationSets, transaction) => {
-      const tree = syntaxTree(transaction.state);
-
-      // TODO: Maybe this part needs some updates/comments:
-      //       * Why use `>=` when comparing `tree.length` and `transaction.state.doc.length`?
-      //       * Why not check pending transaction first?
-
       if (transaction.docChanged) {
+        const tree = syntaxTree(transaction.state);
+
         // If the raw document that's being loaded is very large, then the doc
         // length would be smaller than the tree length. And in that case we
         // queue the transaction to wait until the doc catches up with the tree
         // before processing.
         if (tree.length >= transaction.state.doc.length) {
-          decorationSets = updateDecorations(
-            decorationSets,
-            decodeTransaction(transaction)
-          );
+          if (pendingTransactions.length > 0) {
+            decorationSets = updateDecorations(
+              decorationSets,
+              composeTransactions([
+                ...pendingTransactions.map(decodeTransaction),
+                decodeTransaction(transaction)
+              ])
+            );
+            pendingTransactions = [];
+          } else {
+            decorationSets = updateDecorations(
+              decorationSets,
+              decodeTransaction(transaction)
+            );
+          }
           return decorationSets;
         } else {
           pendingTransactions.push(transaction);
           return decorationSets;
         }
-      } else if (
-        pendingTransactions.length > 0 &&
-        tree.length >= transaction.state.doc.length
-      ) {
-        decorationSets = updateDecorations(
-          decorationSets,
-          composeTransactions([
-            ...pendingTransactions.map(decodeTransaction),
-            decodeTransaction(transaction)
-          ])
-        );
-        pendingTransactions = [];
-        return decorationSets;
       } else {
         return decorationSets;
       }

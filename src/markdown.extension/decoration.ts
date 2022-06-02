@@ -1,84 +1,103 @@
 import { Decoration } from "@codemirror/view";
 
+type DecorationFn = (name: string) => Decoration;
+
+const activeDecoration: DecorationFn = (name: string) => {
+  if (name === "line") {
+    return Decoration.line({
+      attributes: { class: `hrg-${name}-Active` }
+    });
+  } else if (name === "node") {
+    return Decoration.mark({
+      attributes: { class: `hrg-${name}-Active` }
+    });
+  } else {
+    throw new Error(`Unknown active decoration name: ${name}`);
+  }
+};
+
+const lineDecoration: DecorationFn = (name: string) => {
+  return Decoration.line({
+    attributes: { class: `hrg-line-${name}` }
+  });
+};
+
+const markDecoration: DecorationFn = (name: string) => {
+  return Decoration.mark({
+    attributes: { class: `hrg-${name}` }
+  });
+};
+
+const makeDecorations = (acc, [name, decorationFn]) => ({
+  ...acc,
+  [name]: decorationFn(name)
+});
+
 const DECORATION = {
-  active: {
-    line: Decoration.line({
-      attributes: { class: "hrg-line-Active" }
-    }),
-    node: Decoration.mark({
-      attributes: { class: "hrg-node-Active" }
-    })
-  },
-  line: [
-    "CodeBlock",
-    "FencedCode",
-    "Blockquote",
-    "HorizontalRule",
-    "BulletList",
-    "OrderedList",
-    "ListItem",
-    "ATXHeading1",
-    "ATXHeading2",
-    "ATXHeading3",
-    "ATXHeading4",
-    "ATXHeading5",
-    "ATXHeading6",
-    "SetextHeading1",
-    "SetextHeading2",
-    "HTMLBlock",
-    "Paragraph"
-  ].reduce(
-    (acc, type) => ({
-      ...acc,
-      [type]: Decoration.line({
-        attributes: { class: `hrg-line-${type}` }
-      })
-    }),
-    {}
-  ),
-  node: [
-    "CodeBlock",
-    "FencedCode",
-    "Blockquote",
-    "HorizontalRule",
-    "BulletList",
-    "OrderedList",
-    "ListItem",
-    "ATXHeading1",
-    "ATXHeading2",
-    "ATXHeading3",
-    "ATXHeading4",
-    "ATXHeading5",
-    "ATXHeading6",
-    "SetextHeading1",
-    "SetextHeading2",
-    "HTMLBlock",
-    "Paragraph",
-    "Emphasis",
-    "StrongEmphasis",
-    "Link",
-    "Image",
-    "InlineCode",
-    "HTMLTag",
-    "URL",
-    "HeaderMark",
-    "QuoteMark",
-    "ListMark",
-    "LinkMark",
-    "EmphasisMark",
-    "CodeMark",
-    "CodeInfo",
-    "LinkTitle",
-    "LinkLabel"
-  ].reduce(
-    (acc, type) => ({
-      ...acc,
-      [type]: Decoration.mark({
-        attributes: { class: `hrg-${type}` }
-      })
-    }),
-    {}
-  )
+  active: (
+    [
+      ["line", activeDecoration],
+      ["node", activeDecoration]
+    ] as [string, DecorationFn][]
+  ).reduce(makeDecorations, {}),
+  line: (
+    [
+      ["CodeBlock", lineDecoration],
+      ["FencedCode", lineDecoration],
+      ["Blockquote", lineDecoration],
+      ["HorizontalRule", lineDecoration],
+      ["BulletList", lineDecoration],
+      ["OrderedList", lineDecoration],
+      ["ListItem", lineDecoration],
+      ["ATXHeading1", lineDecoration],
+      ["ATXHeading2", lineDecoration],
+      ["ATXHeading3", lineDecoration],
+      ["ATXHeading4", lineDecoration],
+      ["ATXHeading5", lineDecoration],
+      ["ATXHeading6", lineDecoration],
+      ["SetextHeading1", lineDecoration],
+      ["SetextHeading2", lineDecoration],
+      ["HTMLBlock", lineDecoration],
+      ["Paragraph", lineDecoration]
+    ] as [string, DecorationFn][]
+  ).reduce(makeDecorations, {}),
+  node: (
+    [
+      ["CodeBlock", markDecoration],
+      ["FencedCode", markDecoration],
+      ["Blockquote", markDecoration],
+      ["HorizontalRule", markDecoration],
+      ["BulletList", markDecoration],
+      ["OrderedList", markDecoration],
+      ["ListItem", markDecoration],
+      ["ATXHeading1", markDecoration],
+      ["ATXHeading2", markDecoration],
+      ["ATXHeading3", markDecoration],
+      ["ATXHeading4", markDecoration],
+      ["ATXHeading5", markDecoration],
+      ["ATXHeading6", markDecoration],
+      ["SetextHeading1", markDecoration],
+      ["SetextHeading2", markDecoration],
+      ["HTMLBlock", markDecoration],
+      ["Paragraph", markDecoration],
+      ["Emphasis", markDecoration],
+      ["StrongEmphasis", markDecoration],
+      ["Link", markDecoration],
+      ["Image", markDecoration],
+      ["InlineCode", markDecoration],
+      ["HTMLTag", markDecoration],
+      ["URL", markDecoration],
+      ["HeaderMark", markDecoration],
+      ["QuoteMark", markDecoration],
+      ["ListMark", markDecoration],
+      ["LinkMark", markDecoration],
+      ["EmphasisMark", markDecoration],
+      ["CodeMark", markDecoration],
+      ["CodeInfo", markDecoration],
+      ["LinkTitle", markDecoration],
+      ["LinkLabel", markDecoration]
+    ] as [string, DecorationFn][]
+  ).reduce(makeDecorations, {})
 };
 
 export const getActiveDecoration = (type: string): Decoration => {
