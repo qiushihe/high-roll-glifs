@@ -2,10 +2,8 @@ import React, { ChangeEvent, PureComponent, ReactNode } from "react";
 import PropTypes, { InferProps } from "prop-types";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
-import { keymap } from "@codemirror/view";
-import { history, historyKeymap } from "@codemirror/history";
-import { lineNumbers } from "@codemirror/gutter";
-import { defaultKeymap } from "@codemirror/commands";
+import { keymap, lineNumbers } from "@codemirror/view";
+import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 
 import { markdownExtension, MarkdownProcessor } from "/src/markdown.extension";
@@ -61,7 +59,8 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
         history(),
         markdown({ addKeymap: false }),
         markdownExtension(processor),
-        keymap.of([...defaultKeymap, ...historyKeymap])
+        keymap.of(defaultKeymap),
+        keymap.of(historyKeymap)
       ]
     });
 

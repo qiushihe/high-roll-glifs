@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 import { Extension, StateField, EditorState } from "@codemirror/state";
-import { Tooltip, showTooltip } from "@codemirror/tooltip";
+import { Tooltip, showTooltip } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 
 class Inspector {

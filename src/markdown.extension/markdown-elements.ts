@@ -1,6 +1,6 @@
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
-import { Range } from "@codemirror/rangeset";
+import { Range } from "@codemirror/state";
 import { SyntaxNode, Tree } from "@lezer/common";
 
 import {
@@ -200,13 +200,13 @@ const iterateRootNodesInRange = (
   };
 
   tree.iterate({
-    enter: (type, from, to, getNode) => {
-      const node = getNode();
+    enter: (syntaxNode) => {
       if (
-        node.type.name !== "Document" &&
-        (!node.parent || node.parent.type.name === "Document")
+        syntaxNode.type.name !== "Document" &&
+        (!syntaxNode.node.parent ||
+          syntaxNode.node.parent.type.name === "Document")
       ) {
-        iterator(node);
+        iterator(syntaxNode.node);
       }
     },
     from: rootBlockRangeFrom,
@@ -236,7 +236,7 @@ const decorateNode = (
     });
   }
 
-  const cursor = node.cursor;
+  const cursor = node.cursor();
 
   if (cursor.firstChild()) {
     while (true) {
