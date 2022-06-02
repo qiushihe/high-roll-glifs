@@ -1,7 +1,7 @@
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { Range } from "@codemirror/rangeset";
-import { SyntaxNode } from "@lezer/common";
+import { SyntaxNode, Tree } from "@lezer/common";
 
 import {
   StateField,
@@ -59,103 +59,166 @@ const composeTransactions = (
   }, null);
 };
 
-// TODO: Fix the bug where starting text entry on an empty line would cause the
-//       decorations on the following block elements to be cleared.
-const iterateRootNodesInRange = (
-  state: EditorState,
-  range: NumericRange,
-  iterator: (node: SyntaxNode) => void
-) => {
-  // Wait for the syntax tree to be parsed to a point that includes the end
-  // position of the given range.
-  const tree = syntaxTree(state);
-
-  // Normalize the given `range` (which may start and end in the middle of some
-  // lines) to "block range" that always starts and ends at the start/end of
-  // their respective lines.
-  const blockRange = {
-    from: state.doc.lineAt(range.from).from,
-    to: state.doc.lineAt(range.to).to
-  };
-
-  // Creator a cursor ...
+// Return the range covered by root level nodes touched by the given range.
+const getRootNodeRange = (tree: Tree, range: NumericRange): NumericRange => {
   const cursor = tree.cursor();
-  // ... then move it to the start of the range.
-  cursor.moveTo(blockRange.from);
 
-  // Before processing, we have to ensure the cursor is pointing to a top level
-  // block element. This means we can't have to cursor pointing to the root
-  // Document; nor can we have the cursor pointing to some inline elements.
-  let cursorOffset = 0;
+  // Move cursor to the start of the range.
+  cursor.moveTo(range.from, 1);
 
-  // First nudge the cursor backward from its starting location until we either
-  // reached the beginning of the document, or until we reached something
-  // that's not a "Document" node.
-  while (true) {
-    if (cursor.node.type.name !== "Document") {
-      break;
-    }
-
-    cursorOffset += -1;
-
-    if (blockRange.from + cursorOffset <= 0) {
-      break;
-    }
-
-    cursor.moveTo(blockRange.from - cursorOffset);
-  }
-
-  // Reset cursor offset in case we have to nudge the cursor in the other
-  // direction later.
-  cursorOffset = 0;
-
-  // Nudge the cursor forward, only if after all the backward nudging, we're
-  // still on a "Document" node.
-  while (true) {
-    if (cursor.node.type.name !== "Document") {
-      break;
-    }
-
-    cursorOffset += 1;
-
-    if (
-      blockRange.from + cursorOffset >
-      Math.min(blockRange.to, state.doc.length)
-    ) {
-      break;
-    }
-
-    cursor.moveTo(blockRange.from + cursorOffset);
-  }
-
-  // Finally, continue to "go up" with the cursor until the cursor is pointing
-  // at a top-level element.
-  while (true) {
-    if (!cursor.node.parent || cursor.node.parent.type.name === "Document") {
-      break;
-    }
-    cursor.parent();
-  }
-
-  // Only continue processing if after all the nudging, we finally ended up on
-  // something that's not a "Document" node.
-  if (cursor.node.type.name !== "Document") {
+  // If the cursor is currently on a "Document" node ...
+  if (cursor.node.type.name === "Document") {
+    // Offset the start position until we get to a node that's not a "Document"
+    // node, or until we run out of documents.
+    let fromOffset = 0;
     while (true) {
-      iterator(cursor.node);
-
-      // Stop processing if there is nothing left.
-      if (!cursor.nextSibling()) {
+      if (range.from + fromOffset < 0) {
         break;
       }
 
-      // Also stop processing if we reached the end of the range.
-      if (cursor.node.from > blockRange.to) {
+      if (cursor.node.type.name !== "Document") {
         break;
       }
+
+      fromOffset = fromOffset - 1;
+      cursor.moveTo(range.from + fromOffset, 1);
+    }
+
+    const cursorFrom = cursor.from;
+
+    // Next move the cursor to the end of the range.
+    cursor.moveTo(range.to, -1);
+
+    // If the cursor is currently on a "Document" node ...
+    if (cursor.node.type.name === "Document") {
+      // Offset the end position until we get to a node that's not a "Document"
+      // node, or until we run out of documents.
+      let toOffset = 0;
+      while (true) {
+        if (range.from + toOffset > tree.length) {
+          break;
+        }
+
+        if (cursor.node.type.name !== "Document") {
+          break;
+        }
+
+        toOffset = toOffset + 1;
+        cursor.moveTo(range.to + toOffset, -1);
+      }
+
+      // Now we can return start and end positions which point to the start/end
+      // of root level, non-Document nodes.
+      return { from: cursorFrom, to: cursor.to };
+    }
+    // If the cursor is currently not on a "Document" node ...
+    else {
+      // ... then move the cursor "up" until its current node's parent is a
+      // "Document" node.
+      while (true) {
+        if (
+          !cursor.node.parent ||
+          cursor.node.parent.type.name === "Document"
+        ) {
+          break;
+        }
+        cursor.parent();
+      }
+
+      // Now we can return start and end positions which point to the start/end
+      // of root level, non-Document nodes.
+      return { from: range.from, to: cursor.to };
+    }
+  }
+  // If the cursor is currently not on a "Document" node ...
+  else {
+    // ... then move the cursor "up" until its current node's parent is a
+    // "Document" node.
+    while (true) {
+      if (!cursor.node.parent || cursor.node.parent.type.name === "Document") {
+        break;
+      }
+      cursor.parent();
+    }
+
+    const cursorFrom = cursor.from;
+
+    // Next move the cursor to the end of the range.
+    cursor.moveTo(range.to, -1);
+
+    // If the cursor is currently on a "Document" node ...
+    if (cursor.node.type.name === "Document") {
+      // ... then return the start position plus the unmodified end position.
+      return { from: cursorFrom, to: range.to };
+    }
+    // If the cursor is currently not on a "Document" node ...
+    else {
+      // ... then move the cursor "up" until its current node's parent is a
+      // "Document" node.
+      while (true) {
+        if (
+          !cursor.node.parent ||
+          cursor.node.parent.type.name === "Document"
+        ) {
+          break;
+        }
+        cursor.parent();
+      }
+
+      // Now we can return start and end positions which point to the start/end
+      // of root level, non-Document nodes.
+      return { from: cursorFrom, to: cursor.to };
     }
   }
 };
 
+// Iterate all root-level nodes within the given range.
+const iterateRootNodesInRange = (
+  state: EditorState,
+  range: NumericRange,
+  iterator: (node: SyntaxNode) => void
+): NumericRange => {
+  // Get syntax tree.
+  // TODO: Use `ensureSyntaxTree` to ensure the tree is fully available.
+  const tree = syntaxTree(state);
+
+  // Get root-level node range touched by the given range.
+  const { from: rootNodeRangeFrom, to: rootNodeRangeTo } = getRootNodeRange(
+    tree,
+    {
+      from: state.doc.lineAt(range.from).from,
+      to: state.doc.lineAt(range.to).to
+    }
+  );
+
+  // Convert root-level node range to line ranges because whenever we're
+  // clearing or (re)decorating nodes, we either want to ignore a line
+  // completely, or process all the nodes on that line.
+  const { from: rootBlockRangeFrom, to: rootBlockRangeTo } = {
+    from: state.doc.lineAt(rootNodeRangeFrom).from,
+    to: state.doc.lineAt(rootNodeRangeTo).to
+  };
+
+  tree.iterate({
+    enter: (type, from, to, getNode) => {
+      const node = getNode();
+      if (
+        node.type.name !== "Document" &&
+        (!node.parent || node.parent.type.name === "Document")
+      ) {
+        iterator(node);
+      }
+    },
+    from: rootBlockRangeFrom,
+    to: rootBlockRangeTo
+  });
+
+  // Since the given range to this function can be different from the effective
+  // range processed by this function, we return the effective range.
+  return { from: rootBlockRangeFrom, to: rootBlockRangeTo };
+};
+
+// Apply decoration to a given node as well as all of its child nodes.
 const decorateNode = (
   node: SyntaxNode,
   state: EditorState,
@@ -212,6 +275,8 @@ const updateDecorations = (
     true
   );
 
+  const effectiveBeforeRanges: NumericRange[] = [];
+
   // Before applying changes in the transaction to `decorationSet`, we have
   // to remove any decoration from the `changedLinesRanges.from` range of
   // lines, so we don't end up with duplicated decorations.
@@ -222,20 +287,24 @@ const updateDecorations = (
   ) {
     const { from: beforeRange } = changedLinesRanges[rangeIndex];
 
-    iterateRootNodesInRange(oldState, beforeRange, (node) => {
-      const fromLine = oldState.doc.lineAt(node.from);
-      const toLine = oldState.doc.lineAt(node.to);
+    effectiveBeforeRanges[rangeIndex] = iterateRootNodesInRange(
+      oldState,
+      beforeRange,
+      (node) => {
+        const fromLine = oldState.doc.lineAt(node.from);
+        const toLine = oldState.doc.lineAt(node.to);
 
-      decorationSets = decorationSets.map((decorationSet) => {
-        decorationSet = decorationSet.update({
-          filterFrom: fromLine.from,
-          filterTo: toLine.to,
-          filter: () => false
+        decorationSets = decorationSets.map((decorationSet) => {
+          decorationSet = decorationSet.update({
+            filterFrom: fromLine.from,
+            filterTo: toLine.to,
+            filter: () => false
+          });
+
+          return decorationSet;
         });
-
-        return decorationSet;
-      });
-    });
+      }
+    );
   }
 
   // Apply the changes in the transaction to `decorationSet` so that the
@@ -255,14 +324,26 @@ const updateDecorations = (
   ) {
     const { to: afterRange } = changedLinesRanges[rangeIndex];
 
+    // Since during the course of removing decorations from affected ranges,
+    // we likely would have removed decorations from a larger range from the
+    // original range. Here we have to compensate the "after range" so that it
+    // is extended to cover at least the same area as the range from which
+    // decorations were removed from.
+    const effectiveAfterRange = {
+      from: Math.min(afterRange.from, effectiveBeforeRanges[rangeIndex].from),
+      to: Math.max(
+        afterRange.to,
+        effectiveBeforeRanges[rangeIndex].to +
+          (newState.doc.length - oldState.doc.length)
+      )
+    };
+
     // Since all decorations for the affected ranges were removed at the start,
     // we now have to redecorate the root level block elements.
     // Use layer `0` for line level block type decorations.
-    if (!decorationSets[0]) {
-      decorationSets[0] = Decoration.none;
-    }
     const newDecorations: Range<Decoration>[] = [];
-    iterateRootNodesInRange(newState, afterRange, (node) => {
+
+    iterateRootNodesInRange(newState, effectiveAfterRange, (node) => {
       const blockType = node.type.name;
       const fromLine = newState.doc.lineAt(node.from);
       const toLine = newState.doc.lineAt(node.to);
@@ -276,20 +357,19 @@ const updateDecorations = (
       }
     });
     if (newDecorations.length > 0) {
-      decorationSets[0] = decorationSets[0].update({
-        add: newDecorations
+      decorationSets[0] = (decorationSets[0] || Decoration.none).update({
+        add: newDecorations,
+        sort: true
       });
     }
 
-    // Update decorations for markdown elements.
-    iterateRootNodesInRange(newState, afterRange, (node) => {
+    // Update decorations for inline markdown elements.
+    iterateRootNodesInRange(newState, effectiveAfterRange, (node) => {
       // Use layer `1` and onward for element type decorations.
       decorateNode(node, newState, 1).forEach(({ decorationRange, depth }) => {
-        if (!decorationSets[depth]) {
-          decorationSets[depth] = Decoration.none;
-        }
-
-        decorationSets[depth] = decorationSets[depth].update({
+        decorationSets[depth] = (
+          decorationSets[depth] || Decoration.none
+        ).update({
           add: [decorationRange],
           sort: true
         });

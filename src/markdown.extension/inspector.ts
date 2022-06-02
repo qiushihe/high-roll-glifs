@@ -34,9 +34,11 @@ class Inspector {
       return {
         pos: selectionRange.head,
         above: true,
-        class: "cm-markdown-inspector-tooltip",
+        strictSide: false,
+        arrow: true,
         create: () => {
           const dom = document.createElement("div");
+          dom.className = "cm-markdown-inspector-tooltip";
           dom.innerHTML = "(" + position + ") " + paths.join(" > ");
           return { dom };
         }
@@ -64,11 +66,18 @@ const theme = EditorView.baseTheme({
   ".cm-tooltip.cm-markdown-inspector-tooltip": {
     fontFamily: "sans-serif",
     fontSize: "12px",
+    lineHeight: "16px",
     backgroundColor: "#66b",
     color: "white",
     border: "none",
-    padding: "2px 7px",
-    borderRadius: "10px"
+    padding: "2px 10px",
+    borderRadius: "10px",
+    pointerEvents: "none",
+    opacity: 0.8,
+    "& .cm-tooltip-arrow:after": {
+      borderTopColor: "#66b",
+      borderBottomColor: "#66b"
+    }
   }
 });
 

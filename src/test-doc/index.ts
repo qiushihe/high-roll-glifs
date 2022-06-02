@@ -17,6 +17,8 @@ import Lists from "!!raw-loader!./lists.md";
 import NestedLazyParagraphs from "!!raw-loader!./nested-lazy-paragraphs.md";
 // @ts-ignore
 import ThematicBreak from "!!raw-loader!./thematic-break.md";
+// @ts-ignore
+import Paragraphs from "!!raw-loader!./paragraphs.md";
 /* eslint-enable @typescript-eslint/ban-ts-comment */
 
 const TEST_DOC: Record<string, string> = {
@@ -28,7 +30,8 @@ const TEST_DOC: Record<string, string> = {
   InlineStyles,
   Lists,
   NestedLazyParagraphs,
-  ThematicBreak
+  ThematicBreak,
+  Paragraphs
 };
 
 export const getTestDocNames = (): string[] => {
