@@ -16,7 +16,7 @@ type ExtensionConfig = {
 export const liveMarkdown = (config: ExtensionConfig): Extension[] => {
   return [
     ...viewProxy(config.processor),
-    ...decorateNodes(),
+    ...decorateNodes({ inspector: !!config.inspector }),
     ...highlightActiveLine(),
     ...(config.inspector ? inspectCursor() : []),
     ...(config.liveNodes ? liveNodes() : [])

@@ -3,6 +3,10 @@ import { Extension } from "@codemirror/state";
 import decorateNodes from "./decorate-nodes";
 import theme from "./theme";
 
-export default (): Extension[] => {
-  return [...decorateNodes(), ...theme()];
+type ExtensionConfig = {
+  inspector: boolean;
+};
+
+export default (config: ExtensionConfig): Extension[] => {
+  return [...decorateNodes(), ...theme({ showLineTypeName: config.inspector })];
 };
