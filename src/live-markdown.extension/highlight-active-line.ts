@@ -1,8 +1,11 @@
 import { StateField, Extension } from "@codemirror/state";
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
-import { syntaxTree } from "@codemirror/language";
 
-import { getActiveDecoration } from "/src/markdown.extension/decoration";
+const ACTIVE_LINE_CLASS_NAME = "hrg-ActiveLine";
+
+const activeLineDecoration = Decoration.line({
+  attributes: { class: ACTIVE_LINE_CLASS_NAME }
+});
 
 const stateField = () =>
   StateField.define<DecorationSet>({
@@ -16,27 +19,9 @@ const stateField = () =>
 
           decorationSet = decorationSet.update({
             add: [
-              getActiveDecoration("line").range(
-                transaction.state.doc.line(line).from
-              )
+              activeLineDecoration.range(transaction.state.doc.line(line).from)
             ]
           });
-
-          const cursor = syntaxTree(transaction.state).cursor(range.from);
-
-          if (
-            cursor.node.type.name === "Emphasis" ||
-            cursor.node.type.name === "StrongEmphasis"
-          ) {
-            decorationSet = decorationSet.update({
-              add: [
-                getActiveDecoration("node").range(
-                  cursor.node.from,
-                  cursor.node.to
-                )
-              ]
-            });
-          }
         } else {
           const fromLine = transaction.state.doc.lineAt(range.from).number;
           const toLine = transaction.state.doc.lineAt(range.to).number;
@@ -44,7 +29,7 @@ const stateField = () =>
           for (let line = fromLine; line <= toLine; line++) {
             decorationSet = decorationSet.update({
               add: [
-                getActiveDecoration("line").range(
+                activeLineDecoration.range(
                   transaction.state.doc.line(line).from
                 )
               ]
@@ -62,4 +47,11 @@ const stateField = () =>
     }
   });
 
-export default (): Extension[] => [stateField()];
+const theme = () =>
+  EditorView.baseTheme({
+    [`.${ACTIVE_LINE_CLASS_NAME}`]: {
+      backgroundColor: "#f0f8ff"
+    }
+  });
+
+export default (): Extension[] => [stateField(), theme()];

@@ -2,6 +2,9 @@ import { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 const theme = EditorView.baseTheme({
+  ".cm-line": {
+    // fontFamily: "sans-serif"
+  },
   ...[
     "CodeBlock",
     "FencedCode",
@@ -61,19 +64,6 @@ const theme = EditorView.baseTheme({
   },
   ".hrg-ListMark": {
     color: "red"
-  },
-  // TODO: Move this to "active element" extension
-  // ".hrg-EmphasisMark": {
-  //   display: "none"
-  // },
-  ".hrg-line-Active": {
-    backgroundColor: "#f0f8ff"
-  },
-  ".hrg-node-Active": {
-    display: "inline-block",
-    "& .hrg-EmphasisMark": {
-      display: "inline"
-    }
   }
 });
 

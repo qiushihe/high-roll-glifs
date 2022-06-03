@@ -2,20 +2,6 @@ import { Decoration } from "@codemirror/view";
 
 type DecorationFn = (name: string) => Decoration;
 
-const activeDecoration: DecorationFn = (name: string) => {
-  if (name === "line") {
-    return Decoration.line({
-      attributes: { class: `hrg-${name}-Active` }
-    });
-  } else if (name === "node") {
-    return Decoration.mark({
-      attributes: { class: `hrg-${name}-Active` }
-    });
-  } else {
-    throw new Error(`Unknown active decoration name: ${name}`);
-  }
-};
-
 const lineDecoration: DecorationFn = (name: string) => {
   return Decoration.line({
     attributes: { class: `hrg-line-${name}` }
@@ -34,12 +20,6 @@ const makeDecorations = (acc, [name, decorationFn]) => ({
 });
 
 const DECORATION = {
-  active: (
-    [
-      ["line", activeDecoration],
-      ["node", activeDecoration]
-    ] as [string, DecorationFn][]
-  ).reduce(makeDecorations, {}),
   line: (
     [
       ["CodeBlock", lineDecoration],
@@ -98,10 +78,6 @@ const DECORATION = {
       ["LinkLabel", markDecoration]
     ] as [string, DecorationFn][]
   ).reduce(makeDecorations, {})
-};
-
-export const getActiveDecoration = (type: string): Decoration => {
-  return DECORATION.active[type];
 };
 
 export const getLineTypeDecoration = (type: string): Decoration => {

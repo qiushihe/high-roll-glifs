@@ -7,55 +7,22 @@ import {
   StateField,
   Extension,
   Transaction,
-  EditorState,
-  ChangeSet
+  EditorState
 } from "@codemirror/state";
 
+import { getLineTypeDecoration, getNodeTypeDecoration } from "./decoration";
+
 import {
-  getLineTypeDecoration,
-  getNodeTypeDecoration
-} from "/src/markdown.extension/decoration";
+  PlainTransaction,
+  decodeTransaction,
+  composeTransactions
+} from "./transaction";
 
-type NumericRange = { from: number; to: number };
-
-type PlainTransaction = {
-  oldState: EditorState;
-  newState: EditorState;
-  changes: ChangeSet;
-};
-
-type GraduatedDecorationRange = {
-  decorationRange: Range<Decoration>;
-  depth: number;
-};
-
-const sortedNumericRange = (from: number, to: number) => {
-  return from > to ? { from: to, to: from } : { from, to };
-};
-
-const decodeTransaction = (transaction: Transaction): PlainTransaction => {
-  return {
-    oldState: transaction.startState,
-    newState: transaction.state,
-    changes: transaction.changes
-  };
-};
-
-const composeTransactions = (
-  transactions: PlainTransaction[]
-): PlainTransaction => {
-  return transactions.reduce((acc, transaction) => {
-    if (acc === null) {
-      return transaction;
-    } else {
-      return {
-        oldState: acc.oldState,
-        newState: transaction.newState,
-        changes: acc.changes.compose(transaction.changes)
-      };
-    }
-  }, null);
-};
+import {
+  NumericRange,
+  GraduatedDecorationRange,
+  sortedNumericRange
+} from "./range";
 
 // Return the range covered by root level nodes touched by the given range.
 const getRootNodeRange = (tree: Tree, range: NumericRange): NumericRange => {

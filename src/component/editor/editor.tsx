@@ -4,10 +4,14 @@ import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
-import { markdownExtension, MarkdownProcessor } from "/src/markdown.extension";
 import { getTestDocNames, getTestDocByName } from "/src/test-doc";
+
+import {
+  liveMarkdown,
+  LiveMarkdownProcessor
+} from "/src/live-markdown.extension";
 
 import { Base, EditorControls, EditorContainer } from "./editor.style";
 
@@ -50,15 +54,16 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
   }
 
   componentDidMount(): void {
-    const processor = MarkdownProcessor.getDefaultInstance();
+    const processor = LiveMarkdownProcessor.getDefaultInstance();
 
     this.editorState = EditorState.create({
       doc: "",
       extensions: [
+        EditorView.lineWrapping,
         lineNumbers(),
         history(),
-        markdown({ addKeymap: false }),
-        markdownExtension(processor),
+        markdown({ base: markdownLanguage, addKeymap: false }),
+        liveMarkdown({ processor, inspector: true, liveNodes: true }),
         keymap.of(defaultKeymap),
         keymap.of(historyKeymap)
       ]
