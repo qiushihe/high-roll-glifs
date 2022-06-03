@@ -10,8 +10,11 @@ export default merge(common, {
   },
   devServer: {
     port: 3000,
-    disableHostCheck: true,
-    writeToDisk: true,
+    allowedHosts: "all",
+    hot: true,
+    devMiddleware: {
+      writeToDisk: true
+    },
     historyApiFallback: {
       index: "/index.html"
     }
