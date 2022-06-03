@@ -38,7 +38,7 @@ class Application extends PureComponent<InferProps<typeof propTypes>> {
   render(): ReactNode {
     return (
       <Base>
-        <Editor onChange={(/* editor, data, value */) => {}} />
+        <Editor debug={true} onChange={(/* editor, data, value */) => {}} />
       </Base>
     );
   }

@@ -16,10 +16,14 @@ import {
 import { Base, EditorControls, EditorContainer } from "./editor.style";
 
 const propTypes = {
+  debug: PropTypes.bool,
+  outerSpacing: PropTypes.number,
   onChange: PropTypes.func
 };
 
 const defaultProps = {
+  debug: false,
+  outerSpacing: 20,
   onChange: (): void => {}
 };
 
@@ -54,18 +58,20 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
   }
 
   componentDidMount(): void {
+    const { debug } = this.props;
+
     const processor = LiveMarkdownProcessor.getDefaultInstance();
 
     this.editorState = EditorState.create({
       doc: "",
       extensions: [
         EditorView.lineWrapping,
-        lineNumbers(),
         history(),
         markdown({ base: markdownLanguage, addKeymap: false }),
-        liveMarkdown({ processor, inspector: true, liveNodes: true }),
+        liveMarkdown({ processor, inspector: debug, liveNodes: true }),
         keymap.of(defaultKeymap),
-        keymap.of(historyKeymap)
+        keymap.of(historyKeymap),
+        ...(debug ? [lineNumbers()] : [])
       ]
     });
 
@@ -107,6 +113,7 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
   }
 
   render(): ReactNode {
+    const { outerSpacing } = this.props;
     const { testDocName } = this.state;
 
     return (
@@ -127,7 +134,10 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
             </select>
           </label>
         </EditorControls>
-        <EditorContainer ref={this.editorContainerRef} />
+        <EditorContainer
+          ref={this.editorContainerRef}
+          outerSpacing={outerSpacing}
+        />
       </Base>
     );
   }
