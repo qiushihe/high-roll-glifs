@@ -21,7 +21,7 @@ export const EditorContainer = styled.div`
   min-height: 0;
   overflow: auto;
 
-  .cm-wrap {
+  .cm-editor {
     position: absolute !important;
     top: 0;
     left: 0;

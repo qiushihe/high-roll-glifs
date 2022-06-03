@@ -1,9 +1,12 @@
 import { ChangeSet, EditorState, Transaction } from "@codemirror/state";
 
+import { NumericRange } from "./range";
+
 export type PlainTransaction = {
   oldState: EditorState;
   newState: EditorState;
   changes: ChangeSet;
+  selectionRanges: NumericRange[];
 };
 
 export const decodeTransaction = (
@@ -12,7 +15,11 @@ export const decodeTransaction = (
   return {
     oldState: transaction.startState,
     newState: transaction.state,
-    changes: transaction.changes
+    changes: transaction.changes,
+    selectionRanges: (transaction.selection?.ranges || []).map((range) => ({
+      from: range.from,
+      to: range.to
+    }))
   };
 };
 
@@ -26,7 +33,11 @@ export const composeTransactions = (
       return {
         oldState: acc.oldState,
         newState: transaction.newState,
-        changes: acc.changes.compose(transaction.changes)
+        changes: acc.changes.compose(transaction.changes),
+        selectionRanges: [
+          ...acc.selectionRanges,
+          ...transaction.selectionRanges
+        ]
       };
     }
   }, null);

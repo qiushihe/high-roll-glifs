@@ -228,29 +228,36 @@ const updateDecorations = (
   const newState = transaction.newState;
 
   // Used to keep track of the range of lines affected by the transaction.
-  const changedLinesRanges: { from: NumericRange; to: NumericRange }[] = [];
+  const changedRanges: { before: NumericRange; after: NumericRange }[] = [];
 
   transaction.changes.iterChangedRanges(
     (beforeStart, beforeEnd, afterStart, afterEnd) => {
-      changedLinesRanges.push({
-        from: sortedNumericRange(beforeStart, beforeEnd),
-        to: sortedNumericRange(afterStart, afterEnd)
+      changedRanges.push({
+        before: sortedNumericRange(beforeStart, beforeEnd),
+        after: sortedNumericRange(afterStart, afterEnd)
       });
     },
     true
   );
 
+  // If there isn't any document changes ...
+  if (changedRanges.length <= 0) {
+    // ... then use selection ranges as changes to trigger updates.
+    transaction.selectionRanges.forEach((selectionRange) => {
+      changedRanges.push({
+        before: selectionRange,
+        after: selectionRange
+      });
+    });
+  }
+
   const effectiveBeforeRanges: NumericRange[] = [];
 
   // Before applying changes in the transaction to `decorationSet`, we have
-  // to remove any decoration from the `changedLinesRanges.from` range of
+  // to remove any decoration from the `changedRanges.before` range of
   // lines, so we don't end up with duplicated decorations.
-  for (
-    let rangeIndex = 0;
-    rangeIndex < changedLinesRanges.length;
-    rangeIndex++
-  ) {
-    const { from: beforeRange } = changedLinesRanges[rangeIndex];
+  for (let rangeIndex = 0; rangeIndex < changedRanges.length; rangeIndex++) {
+    const { before: beforeRange } = changedRanges[rangeIndex];
 
     effectiveBeforeRanges[rangeIndex] = iterateRootNodesInRange(
       oldState,
@@ -280,14 +287,10 @@ const updateDecorations = (
   });
 
   // After applying changes in the transaction to `decorationSet`, create
-  // decorations for all the `changedLinesRanges.to` ranges and store those
+  // decorations for all the `changedRanges.after` ranges and store those
   // decorations in `decorationSet`.
-  for (
-    let rangeIndex = 0;
-    rangeIndex < changedLinesRanges.length;
-    rangeIndex++
-  ) {
-    const { to: afterRange } = changedLinesRanges[rangeIndex];
+  for (let rangeIndex = 0; rangeIndex < changedRanges.length; rangeIndex++) {
+    const { after: afterRange } = changedRanges[rangeIndex];
 
     // Since during the course of removing decorations from affected ranges,
     // we likely would have removed decorations from a larger range from the
@@ -353,35 +356,31 @@ const stateField = () => {
   return StateField.define<DecorationSet[]>({
     create: () => [],
     update: (decorationSets, transaction) => {
-      if (transaction.docChanged) {
-        const tree = syntaxTree(transaction.state);
+      const tree = syntaxTree(transaction.state);
 
-        // If the raw document that's being loaded is very large, then the doc
-        // length would be smaller than the tree length. And in that case we
-        // queue the transaction to wait until the doc catches up with the tree
-        // before processing.
-        if (tree.length >= transaction.state.doc.length) {
-          if (pendingTransactions.length > 0) {
-            decorationSets = updateDecorations(
-              decorationSets,
-              composeTransactions([
-                ...pendingTransactions.map(decodeTransaction),
-                decodeTransaction(transaction)
-              ])
-            );
-            pendingTransactions = [];
-          } else {
-            decorationSets = updateDecorations(
-              decorationSets,
+      // If the raw document that's being loaded is very large, then the doc
+      // length would be smaller than the tree length. And in that case we
+      // queue the transaction to wait until the doc catches up with the tree
+      // before processing.
+      if (tree.length >= transaction.state.doc.length) {
+        if (pendingTransactions.length > 0) {
+          decorationSets = updateDecorations(
+            decorationSets,
+            composeTransactions([
+              ...pendingTransactions.map(decodeTransaction),
               decodeTransaction(transaction)
-            );
-          }
-          return decorationSets;
+            ])
+          );
+          pendingTransactions = [];
         } else {
-          pendingTransactions.push(transaction);
-          return decorationSets;
+          decorationSets = updateDecorations(
+            decorationSets,
+            decodeTransaction(transaction)
+          );
         }
+        return decorationSets;
       } else {
+        pendingTransactions.push(transaction);
         return decorationSets;
       }
     },
