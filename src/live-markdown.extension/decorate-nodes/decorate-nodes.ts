@@ -41,6 +41,24 @@ const decorateNode = (
       ),
       depth
     });
+
+    // TODO: Refactor these to be injectable into this function in a more
+    //       formal manner
+    if (node.type.name === "HeaderMark") {
+      if (node.parent?.type.name.match(/^ATXHeading/)) {
+        const gapMatch = state.doc
+          .sliceString(node.parent.from, node.parent.to)
+          .match(/^#+(\s+)/);
+
+        ranges.push({
+          decorationRange: getNodeTypeDecoration("HeaderGap").range(
+            node.to,
+            node.to + gapMatch[1].length
+          ),
+          depth
+        });
+      }
+    }
   }
 
   const cursor = node.cursor();

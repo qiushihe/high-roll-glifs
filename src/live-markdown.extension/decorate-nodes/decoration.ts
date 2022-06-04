@@ -68,6 +68,7 @@ const DECORATION = {
       ["HTMLTag", markDecoration],
       ["URL", markDecoration],
       ["HeaderMark", markDecoration],
+      ["HeaderGap", markDecoration],
       ["QuoteMark", markDecoration],
       ["ListMark", markDecoration],
       ["LinkMark", markDecoration],

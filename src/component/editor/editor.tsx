@@ -1,4 +1,4 @@
-import React, { ChangeEvent, PureComponent, ReactNode } from "react";
+import React, { ChangeEvent, PureComponent } from "react";
 import PropTypes, { InferProps } from "prop-types";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
@@ -112,7 +112,7 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
     });
   }
 
-  render(): ReactNode {
+  render(): JSX.Element {
     const { outerSpacing } = this.props;
     const { testDocName } = this.state;
 
