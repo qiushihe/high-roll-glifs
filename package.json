@@ -58,6 +58,7 @@
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.10.4",
     "@babel/register": "^7.5.5",
+    "@beyonk/google-fonts-webpack-plugin": "^1.7.0",
     "@types/bluebird": "^3.5.32",
     "@types/chai": "^4.2.12",
     "@types/lodash": "^4.14.159",
