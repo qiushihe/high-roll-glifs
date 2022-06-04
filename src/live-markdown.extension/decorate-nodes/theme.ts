@@ -8,7 +8,7 @@ type ThemeConfig = {
 const theme = (config: ThemeConfig) =>
   EditorView.baseTheme({
     ".cm-line": {
-      // fontFamily: "sans-serif"
+      fontFamily: "sans-serif"
     },
     ...[
       "CodeBlock",
@@ -73,6 +73,15 @@ const theme = (config: ThemeConfig) =>
     },
     ".hrg-ListMark": {
       color: "red"
+    },
+    ".hrg-InlineCode": {
+      fontFamily: "monospace"
+    },
+    ".hrg-line-FencedCode": {
+      fontFamily: "monospace"
+    },
+    ".hrg-line-CodeBlock": {
+      fontFamily: "monospace"
     }
   });
 
