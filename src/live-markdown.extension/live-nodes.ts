@@ -9,20 +9,31 @@ const activeNodeDecoration = Decoration.mark({
   attributes: { class: ACTIVE_NODE_CLASS_NAME }
 });
 
-const resolveLiveNodeRange = (node: SyntaxNode): string | null => {
+const resolveNode = (node: SyntaxNode): string | null => {
   if (!node) {
     return null;
   } else if (
     node.type.name === "EmphasisMark" ||
-    node.type.name === "CodeMark"
+    node.type.name === "CodeMark" ||
+    node.type.name === "HeaderMark"
   ) {
-    return resolveLiveNodeRange(node.parent);
+    return resolveNode(node.parent);
   } else if (
     node.type.name === "Emphasis" ||
     node.type.name === "StrongEmphasis" ||
-    node.type.name === "InlineCode"
+    node.type.name === "InlineCode" ||
+    node.type.name === "CodeText" ||
+    node.type.name === "FencedCode" ||
+    node.type.name === "ATXHeading1" ||
+    node.type.name === "ATXHeading2" ||
+    node.type.name === "ATXHeading3" ||
+    node.type.name === "ATXHeading4" ||
+    node.type.name === "ATXHeading5" ||
+    node.type.name === "ATXHeading6" ||
+    node.type.name === "SetextHeading1" ||
+    node.type.name === "SetextHeading2"
   ) {
-    return resolveLiveNodeRange(node.parent) || `${node.from}:${node.to}`;
+    return resolveNode(node.parent) || `${node.from}:${node.to}`;
   } else {
     return null;
   }
@@ -53,7 +64,7 @@ const stateField = () =>
           })
           .flat()
           // For each cursor, resolve the top most level live node range
-          .map((cursor) => resolveLiveNodeRange(cursor.node))
+          .map((cursor) => resolveNode(cursor.node))
           // Remove nil values
           .filter((value) => value !== undefined && value !== null)
           // Remove duplicates (i.e. when the cursor is inside a node, then
@@ -74,6 +85,9 @@ const stateField = () =>
           });
       });
 
+      // TODO: Refactor this to match the multi-layer implementation of the
+      //       node decoration extension
+
       return decorationSet;
     },
     provide: (stateField) => {
@@ -83,29 +97,54 @@ const stateField = () =>
     }
   });
 
+const DEBUG = false;
+
+const STYLES_INACTIVE = DEBUG ? { opacity: 0.5 } : { display: "none" };
+
+const STYLES_ACTIVE = DEBUG ? { opacity: 1 } : { display: "inline" };
+
 const theme = () =>
   EditorView.baseTheme({
     ".hrg-line-Paragraph": {
-      "& .hrg-EmphasisMark": {
-        display: "none"
-        // opacity: 0.5
-      },
-      "& .hrg-CodeMark": {
-        display: "none"
-        // opacity: 0.5
-      },
+      "& .hrg-EmphasisMark": { ...STYLES_INACTIVE },
+      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
       [`& .${ACTIVE_NODE_CLASS_NAME}`]: {
-        display: "inline-block",
-        "& .hrg-EmphasisMark": {
-          display: "inline"
-          // opacity: 1
-        },
-        "& .hrg-CodeMark": {
-          display: "inline"
-          // opacity: 1
-        }
+        "& .hrg-EmphasisMark": { ...STYLES_ACTIVE },
+        "& .hrg-CodeMark": { ...STYLES_ACTIVE }
       }
-    }
+    },
+    ".hrg-line-FencedCode": {
+      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
+      [`& .${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-CodeMark": { ...STYLES_ACTIVE }
+      }
+    },
+    ...[1, 2, 3, 4, 5, 6].reduce(
+      (acc, level) => ({
+        ...acc,
+        [`.hrg-line-ATXHeading${level}`]: {
+          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
+          "& .hrg-HeaderGap": { ...STYLES_INACTIVE },
+          [`& .${ACTIVE_NODE_CLASS_NAME}`]: {
+            "& .hrg-HeaderMark": { ...STYLES_ACTIVE },
+            "& .hrg-HeaderGap": { ...STYLES_ACTIVE }
+          }
+        }
+      }),
+      {}
+    ),
+    ...[1, 2].reduce(
+      (acc, level) => ({
+        ...acc,
+        [`.hrg-line-SetextHeading${level}`]: {
+          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
+          [`& .${ACTIVE_NODE_CLASS_NAME}`]: {
+            "& .hrg-HeaderMark": { ...STYLES_ACTIVE }
+          }
+        }
+      }),
+      {}
+    )
   });
 
 export default (): Extension[] => [stateField(), theme()];

@@ -56,7 +56,16 @@ const theme = (config: ThemeConfig) =>
     ...[1, 2, 3, 4, 5, 6].reduce(
       (acc, level) => ({
         ...acc,
-        [`.hrg-ATXHeading${level}, .hrg-SetextHeading${level}`]: {
+        [`.hrg-ATXHeading${level}`]: {
+          fontSize: `${36 - (level - 1) * 4}px`
+        }
+      }),
+      {}
+    ),
+    ...[1, 2].reduce(
+      (acc, level) => ({
+        ...acc,
+        [`.hrg-SetextHeading${level}`]: {
           fontSize: `${36 - (level - 1) * 4}px`
         }
       }),
