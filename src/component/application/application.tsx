@@ -1,4 +1,4 @@
-import React, { PureComponent, ReactNode } from "react";
+import React, { useEffect } from "react";
 import PropTypes, { InferProps } from "prop-types";
 import styled from "styled-components";
 
@@ -12,44 +12,24 @@ const propTypes = {
   onMount: PropTypes.func
 };
 
-const defaultProps = {
-  onMount: (): void => {}
+export type ApplicationProps = InferProps<typeof propTypes>;
+
+const Application = ({ onMount }: ApplicationProps): JSX.Element => {
+  useEffect(() => {
+    onMount();
+  }, []);
+
+  return (
+    <Base>
+      <Editor debug={true} onChange={(/* editor, data, value */) => {}} />
+    </Base>
+  );
 };
 
-class Application extends PureComponent<InferProps<typeof propTypes>> {
-  static propTypes = propTypes;
-  static defaultProps = defaultProps;
-
-  constructor(
-    props: InferProps<typeof propTypes>,
-    ctx: Record<string, unknown>
-  ) {
-    super(props, ctx);
-  }
-
-  componentDidMount(): void {
-    const { onMount } = this.props;
-
-    if (onMount) {
-      onMount();
-    }
-  }
-
-  render(): ReactNode {
-    return (
-      <Base>
-        <Editor debug={true} onChange={(/* editor, data, value */) => {}} />
-      </Base>
-    );
-  }
-}
-
-Application.propTypes = {
-  onMount: PropTypes.func
-};
+Application.propTypes = propTypes;
 
 Application.defaultProps = {
-  onMount: () => {}
+  onMount: (): void => {}
 };
 
 export default Application;

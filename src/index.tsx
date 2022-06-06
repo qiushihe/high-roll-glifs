@@ -12,17 +12,16 @@ import Application from "./component/application";
 
 const store = createStore({});
 
-const withProviders: (children: React.ReactNode) => React.ReactNode = flowRight([
-  withContainer(NormalizedStyleProvider, {}),
-  withContainer(ReduxStoreProvider, { store })
-]);
+const withProviders: (children: React.ReactNode) => React.ReactNode = flowRight(
+  [
+    withContainer(NormalizedStyleProvider, {}),
+    withContainer(ReduxStoreProvider, { store })
+  ]
+);
 
-class AppRoot extends React.PureComponent {
-  render() {
-    return React.Children.toArray([withProviders(<Application />)]);
-  }
-}
+const AppRoot = (() =>
+  React.Children.toArray([
+    withProviders(<Application />)
+  ])) as unknown as () => JSX.Element;
 
-const AppRootComponent = AppRoot as any;
-
-ReactDOM.render(<AppRootComponent />, document.getElementById("root"));
+ReactDOM.render(<AppRoot />, document.getElementById("root"));

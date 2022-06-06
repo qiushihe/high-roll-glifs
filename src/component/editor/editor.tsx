@@ -1,4 +1,11 @@
-import React, { ChangeEvent, PureComponent } from "react";
+import React, {
+  ChangeEvent,
+  useEffect,
+  useState,
+  useRef,
+  useCallback
+} from "react";
+import usePrevious from "use-previous";
 import PropTypes, { InferProps } from "prop-types";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
@@ -21,48 +28,42 @@ const propTypes = {
   onChange: PropTypes.func
 };
 
-const defaultProps = {
-  debug: false,
-  outerSpacing: 20,
-  onChange: (): void => {}
-};
+export type EditorProps = InferProps<typeof propTypes>;
 
-type stateTypes = {
-  testDocName: string;
-};
+const Editor = ({
+  debug,
+  outerSpacing,
+  onChange: UNUSED_onChange
+}: EditorProps): JSX.Element => {
+  const [testDocName, setTestDocName] = useState("");
+  const testDocNameWas = usePrevious(testDocName);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorStateRef = useRef<EditorState>(null);
+  const editorViewRef = useRef<EditorView>(null);
 
-class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
-  static propTypes = propTypes;
-  static defaultProps = defaultProps;
+  const handleTestDocumentSelectionChange = useCallback(
+    (evt: ChangeEvent<HTMLSelectElement>) => {
+      const testDocName = evt.target.value;
+      window.localStorage.setItem("hrg-editor-test-doc-name", testDocName);
+      setTestDocName(testDocName);
+    },
+    []
+  );
 
-  editorContainerRef: React.RefObject<HTMLDivElement>;
-  editorView: EditorView | null;
-  editorState: EditorState | null;
+  const loadTestDoc = useCallback((docName: string) => {
+    editorViewRef.current.dispatch({
+      changes: {
+        from: 0,
+        to: editorViewRef.current.state.doc.length,
+        insert: getTestDocByName(docName) || ""
+      }
+    });
+  }, []);
 
-  constructor(
-    props: InferProps<typeof propTypes>,
-    ctx: Record<string, unknown>
-  ) {
-    super(props, ctx);
-
-    this.state = {
-      testDocName: ""
-    };
-
-    this.editorContainerRef = React.createRef();
-    this.editorState = null;
-    this.editorView = null;
-
-    this.handleTestDocumentSelectionChange =
-      this.handleTestDocumentSelectionChange.bind(this);
-  }
-
-  componentDidMount(): void {
-    const { debug } = this.props;
-
+  useEffect(() => {
     const processor = LiveMarkdownProcessor.getDefaultInstance();
 
-    this.editorState = EditorState.create({
+    editorStateRef.current = EditorState.create({
       doc: "",
       extensions: [
         EditorView.lineWrapping,
@@ -75,72 +76,53 @@ class Editor extends PureComponent<InferProps<typeof propTypes>, stateTypes> {
       ]
     });
 
-    if (this.editorContainerRef.current) {
-      this.editorView = new EditorView({
-        state: this.editorState,
-        parent: this.editorContainerRef.current
+    if (editorContainerRef.current) {
+      editorViewRef.current = new EditorView({
+        state: editorStateRef.current,
+        parent: editorContainerRef.current
       });
     }
 
-    this.setState({
-      testDocName: window.localStorage.getItem("hrg-editor-test-doc-name") || ""
-    });
-  }
-
-  componentDidUpdate(_: never, prevState: Readonly<stateTypes>): void {
-    const { testDocName: testDocNameWas } = prevState;
-    const { testDocName } = this.state;
-
-    if (testDocNameWas !== testDocName) {
-      this.loadTestDoc({ docName: testDocName });
-    }
-  }
-
-  handleTestDocumentSelectionChange(evt: ChangeEvent<HTMLSelectElement>): void {
-    const testDocName = evt.target.value;
-    window.localStorage.setItem("hrg-editor-test-doc-name", testDocName);
-    this.setState({ testDocName });
-  }
-
-  loadTestDoc({ docName }: { docName: string }): void {
-    this.editorView.dispatch({
-      changes: {
-        from: 0,
-        to: this.editorView.state.doc.length,
-        insert: getTestDocByName(docName) || ""
-      }
-    });
-  }
-
-  render(): JSX.Element {
-    const { outerSpacing } = this.props;
-    const { testDocName } = this.state;
-
-    return (
-      <Base>
-        <EditorControls>
-          <label>
-            Test Document: &nbsp;
-            <select
-              value={testDocName}
-              onChange={this.handleTestDocumentSelectionChange}
-            >
-              <option value="empty">- none -</option>
-              {getTestDocNames().map((docKey) => (
-                <option key={docKey} value={docKey}>
-                  {docKey}
-                </option>
-              ))}
-            </select>
-          </label>
-        </EditorControls>
-        <EditorContainer
-          ref={this.editorContainerRef}
-          outerSpacing={outerSpacing}
-        />
-      </Base>
+    setTestDocName(
+      window.localStorage.getItem("hrg-editor-test-doc-name") || ""
     );
-  }
-}
+  }, []);
+
+  useEffect(() => {
+    if (testDocNameWas !== testDocName) {
+      loadTestDoc(testDocName);
+    }
+  }, [testDocName]);
+
+  return (
+    <Base>
+      <EditorControls>
+        <label>
+          Test Document: &nbsp;
+          <select
+            value={testDocName}
+            onChange={handleTestDocumentSelectionChange}
+          >
+            <option value="empty">- none -</option>
+            {getTestDocNames().map((docKey) => (
+              <option key={docKey} value={docKey}>
+                {docKey}
+              </option>
+            ))}
+          </select>
+        </label>
+      </EditorControls>
+      <EditorContainer ref={editorContainerRef} outerSpacing={outerSpacing} />
+    </Base>
+  );
+};
+
+Editor.propTypes = propTypes;
+
+Editor.defaultProps = {
+  debug: false,
+  outerSpacing: 20,
+  onChange: (): void => {}
+};
 
 export default Editor;
