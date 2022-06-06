@@ -14,6 +14,12 @@ const markDecoration: DecorationFn = (name: string) => {
   });
 };
 
+const activeMarkDecoration: DecorationFn = (name: string) => {
+  return Decoration.mark({
+    attributes: { class: `hrg-${name} hrg-ActiveNode` }
+  });
+};
+
 const makeDecorations = (acc, [name, decorationFn]) => ({
   ...acc,
   [name]: decorationFn(name)
@@ -44,6 +50,7 @@ const DECORATION = {
   node: (
     [
       ["CodeBlock", markDecoration],
+      ["CodeText", markDecoration],
       ["FencedCode", markDecoration],
       ["Blockquote", markDecoration],
       ["HorizontalRule", markDecoration],
@@ -81,28 +88,44 @@ const DECORATION = {
   ).reduce(makeDecorations, {})
 };
 
+const ACTIVE_NODE_DECORATION = (
+  [
+    ["Blockquote", activeMarkDecoration],
+    ["ATXHeading1", activeMarkDecoration],
+    ["ATXHeading2", activeMarkDecoration],
+    ["SetextHeading1", activeMarkDecoration],
+    ["SetextHeading2", activeMarkDecoration],
+    ["Emphasis", activeMarkDecoration],
+    ["StrongEmphasis", activeMarkDecoration],
+    ["InlineCode", activeMarkDecoration]
+  ] as [string, DecorationFn][]
+).reduce(makeDecorations, {});
+
+export const ACTIVE_NODE_TYPE_NAMES = Object.keys(ACTIVE_NODE_DECORATION);
+
 export const getLineTypeDecoration = (type: string): Decoration => {
   const decoration = DECORATION.line[type];
   if (decoration) {
     return decoration;
   } else {
-    DECORATION.line[type] = Decoration.line({
-      attributes: { class: `hrg-line-${type}` }
-    });
-    console.log(`[getLineTypeDecoration] Added missing decoration for ${type}`);
-    return getLineTypeDecoration(type);
+    throw new Error(`Missing line decoration for type: ${type}`);
   }
 };
 
-export const getNodeTypeDecoration = (type: string): Decoration => {
-  const decoration = DECORATION.node[type];
+export const getNodeTypeDecoration = (
+  type: string,
+  isActive: boolean
+): Decoration => {
+  let decoration = isActive
+    ? ACTIVE_NODE_DECORATION[type]
+    : DECORATION.node[type];
+  if (!decoration) {
+    decoration = DECORATION.node[type];
+  }
+
   if (decoration) {
     return decoration;
   } else {
-    DECORATION.node[type] = Decoration.mark({
-      attributes: { class: `hrg-${type}` }
-    });
-    console.log(`[getNodeTypeDecoration] Added missing decoration for ${type}`);
-    return getNodeTypeDecoration(type);
+    throw new Error(`Missing node decoration for type: ${type}`);
   }
 };

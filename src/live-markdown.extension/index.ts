@@ -5,6 +5,7 @@ import viewProxy from "./view-proxy";
 import decorateNodes from "./decorate-nodes";
 import inspectCursor from "./inspect-cursor";
 import highlightActiveLine from "./highlight-active-line";
+// import liveNodes from "./live-nodes";
 
 type ExtensionConfig = {
   processor: Processor;
@@ -16,6 +17,7 @@ export const liveMarkdown = (config: ExtensionConfig): Extension[] => {
   return [
     ...viewProxy(config.processor),
     ...decorateNodes({ inspector: !!config.inspector }),
+    // ...(config.liveNodes ? liveNodes() : []),
     ...highlightActiveLine(),
     ...(config.inspector ? inspectCursor() : [])
   ];
