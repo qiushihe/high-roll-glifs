@@ -18,4 +18,4 @@ export default connect(
     ...ownProps,
     onMount: dispatchProps.appBoot
   })
-)(Application);
+)(Application as any);

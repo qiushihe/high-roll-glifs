@@ -97,7 +97,7 @@ const stateField = () =>
     }
   });
 
-const DEBUG = false;
+const DEBUG = true;
 
 const STYLES_INACTIVE = DEBUG ? { opacity: 0.5 } : { display: "none" };
 

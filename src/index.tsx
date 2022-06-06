@@ -12,7 +12,7 @@ import Application from "./component/application";
 
 const store = createStore({});
 
-const withProviders = flowRight([
+const withProviders: (children: React.ReactNode) => React.ReactNode = flowRight([
   withContainer(NormalizedStyleProvider, {}),
   withContainer(ReduxStoreProvider, { store })
 ]);
@@ -23,4 +23,6 @@ class AppRoot extends React.PureComponent {
   }
 }
 
-ReactDOM.render(<AppRoot />, document.getElementById("root"));
+const AppRootComponent = AppRoot as any;
+
+ReactDOM.render(<AppRootComponent />, document.getElementById("root"));

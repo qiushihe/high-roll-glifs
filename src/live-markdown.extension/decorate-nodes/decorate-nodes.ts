@@ -25,6 +25,10 @@ import {
   sortedNumericRange
 } from "./range";
 
+type FieldValue = {
+  decorationSets: DecorationSet[];
+};
+
 // Apply decoration to a given node as well as all of its child nodes.
 const decorateNode = (
   node: SyntaxNode,
@@ -81,11 +85,13 @@ const decorateNode = (
 };
 
 const updateDecorations = (
-  decorationSets: DecorationSet[],
+  previousFieldValue: FieldValue,
   transaction: PlainTransaction
 ) => {
   const oldState = transaction.oldState;
   const newState = transaction.newState;
+
+  let decorationSets: DecorationSet[] = previousFieldValue.decorationSets;
 
   // Used to keep track of the range of lines affected by the transaction.
   const changedRanges: { before: NumericRange; after: NumericRange }[] = [];
@@ -100,26 +106,17 @@ const updateDecorations = (
     true
   );
 
-  // If there isn't any document changes ...
-  if (changedRanges.length <= 0) {
-    // ... then use selection ranges as changes to trigger updates.
-    transaction.selectionRanges.forEach((selectionRange) => {
-      changedRanges.push({
-        before: selectionRange,
-        after: selectionRange
-      });
-    });
-  }
-
   const effectiveBeforeRanges: NumericRange[] = [];
 
   // Before applying changes in the transaction to `decorationSet`, we have
   // to remove any decoration from the `changedRanges.before` range of
   // lines, so we don't end up with duplicated decorations.
-  for (let rangeIndex = 0; rangeIndex < changedRanges.length; rangeIndex++) {
-    const { before: beforeRange } = changedRanges[rangeIndex];
-
-    effectiveBeforeRanges[rangeIndex] = iterateRootNodesInRange(
+  const beforeRanges = changedRanges.map((changedRange) => changedRange.before);
+  // TODO: Implement range merging utility function that can merge segments of
+  //       continuous/overlapping ranges.
+  // TODO: Merge in selection/extra ranges from previous cycle.
+  beforeRanges.forEach((beforeRange, index) => {
+    effectiveBeforeRanges[index] = iterateRootNodesInRange(
       oldState,
       beforeRange,
       (node) => {
@@ -137,7 +134,7 @@ const updateDecorations = (
         });
       }
     );
-  }
+  });
 
   // Apply the changes in the transaction to `decorationSet` so that the
   // position of the decorations in the set would be updated to their new
@@ -149,19 +146,22 @@ const updateDecorations = (
   // After applying changes in the transaction to `decorationSet`, create
   // decorations for all the `changedRanges.after` ranges and store those
   // decorations in `decorationSet`.
-  for (let rangeIndex = 0; rangeIndex < changedRanges.length; rangeIndex++) {
-    const { after: afterRange } = changedRanges[rangeIndex];
-
+  const afterRanges = changedRanges.map((changedRange) => changedRange.after);
+  // TODO: Implement range merging utility function that can merge segments of
+  //       continuous/overlapping ranges.
+  // TODO: Merge in selection/extra ranges from transaction's selection.
+  // TODO: Return selection's effective active node ranges as "extra ranges".
+  afterRanges.forEach((afterRange, index) => {
     // Since during the course of removing decorations from affected ranges,
     // we likely would have removed decorations from a larger range from the
     // original range. Here we have to compensate the "after range" so that it
     // is extended to cover at least the same area as the range from which
     // decorations were removed from.
     const effectiveAfterRange = {
-      from: Math.min(afterRange.from, effectiveBeforeRanges[rangeIndex].from),
+      from: Math.min(afterRange.from, effectiveBeforeRanges[index].from),
       to: Math.max(
         afterRange.to,
-        effectiveBeforeRanges[rangeIndex].to +
+        effectiveBeforeRanges[index].to +
           (newState.doc.length - oldState.doc.length)
       )
     };
@@ -203,19 +203,19 @@ const updateDecorations = (
         });
       });
     });
-  }
+  });
 
   // Reverse the decoration set because the innermost layer (which has the
   // highest depth) needs to be applied first.
-  return decorationSets.reverse();
+  return { decorationSets: decorationSets.reverse() };
 };
 
 const stateField = () => {
   let pendingTransactions: Transaction[] = [];
 
-  return StateField.define<DecorationSet[]>({
-    create: () => [],
-    update: (decorationSets, transaction) => {
+  return StateField.define<FieldValue>({
+    create: () => ({ decorationSets: [] }),
+    update: (fieldValue, transaction) => {
       // TODO: Use `ensureSyntaxTree` to ensure the tree is fully available.
       const tree = syntaxTree(transaction.state);
 
@@ -224,30 +224,31 @@ const stateField = () => {
       // queue the transaction to wait until the doc catches up with the tree
       // before processing.
       if (tree.length >= transaction.state.doc.length) {
-        if (pendingTransactions.length > 0) {
-          decorationSets = updateDecorations(
-            decorationSets,
-            composeTransactions([
-              ...pendingTransactions.map(decodeTransaction),
-              decodeTransaction(transaction)
-            ])
-          );
-          pendingTransactions = [];
-        } else {
-          decorationSets = updateDecorations(
-            decorationSets,
+        const updated = updateDecorations(
+          fieldValue,
+          composeTransactions([
+            ...pendingTransactions.map(decodeTransaction),
             decodeTransaction(transaction)
-          );
-        }
-        return decorationSets;
+          ])
+        );
+
+        // Ensure pending transactions (if any) are cleared after they've been
+        // composed above.
+        pendingTransactions = [];
+
+        // Apply changes to the field value.
+        fieldValue.decorationSets = updated.decorationSets;
+
+        return { ...fieldValue };
       } else {
         pendingTransactions.push(transaction);
-        return decorationSets;
+        return { ...fieldValue };
       }
     },
     provide: (stateField) => {
-      return EditorView.decorations.computeN([stateField], (editorState) =>
-        editorState.field(stateField)
+      return EditorView.decorations.computeN(
+        [stateField],
+        (editorState) => editorState.field(stateField).decorationSets
       );
     }
   });
