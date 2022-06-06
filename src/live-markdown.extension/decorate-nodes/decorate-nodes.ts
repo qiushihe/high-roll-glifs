@@ -32,18 +32,28 @@ import {
 
 type FieldValue = {
   decorationSets: Record<string, DecorationSet>;
+  activeRanges: NumericRange[];
 };
 
 const isNodeInRanges = (node: SyntaxNode, ranges: NumericRange[]): boolean => {
   let inRange = false;
 
-  // TODO: Need to handle case with the range completely covers the node!
   ranges.find((range) => {
-    if (
-      (range.from >= node.from && range.from <= node.to) ||
-      (range.to >= node.from && range.to <= node.to)
-    ) {
-      inRange = true;
+    if (range.from <= node.to) {
+      if (range.from >= node.from) {
+        inRange = true;
+      } else {
+        if (range.to >= node.from) {
+          inRange = true;
+        } else {
+          inRange = false;
+        }
+      }
+    } else {
+      inRange = false;
+    }
+
+    if (inRange) {
       return true;
     }
   });
@@ -56,22 +66,30 @@ const decorateNode = (
   depth = 0,
   state: EditorState,
   node: SyntaxNode,
-  selectionRanges: NumericRange[]
+  selectionRanges: NumericRange[],
+  decoratedRanges: Record<string, string[]>
 ): GraduatedDecorationRange[] => {
   const ranges: GraduatedDecorationRange[] = [];
 
   if (node.from !== node.to) {
-    const isActive =
-      isNodeInRanges(node, selectionRanges) &&
-      ACTIVE_NODE_TYPE_NAMES.includes(node.type.name);
+    const nodeRangeKey = `${node.from}:${node.to}`;
+    decoratedRanges[nodeRangeKey] = decoratedRanges[nodeRangeKey] || [];
 
-    ranges.push({
-      decorationRange: getNodeTypeDecoration(node.type.name, isActive).range(
-        node.from,
-        node.to
-      ),
-      depth
-    });
+    if (!decoratedRanges[nodeRangeKey].includes(node.type.name)) {
+      const isActive =
+        isNodeInRanges(node, selectionRanges) &&
+        ACTIVE_NODE_TYPE_NAMES.includes(node.type.name);
+
+      ranges.push({
+        decorationRange: getNodeTypeDecoration(node.type.name, isActive).range(
+          node.from,
+          node.to
+        ),
+        depth
+      });
+
+      decoratedRanges[nodeRangeKey].push(node.type.name);
+    }
 
     // TODO: Refactor these to be injectable into this function in a more
     //       formal manner
@@ -81,13 +99,19 @@ const decorateNode = (
           .sliceString(node.parent.from, node.parent.to)
           .match(/^#+(\s+)/);
 
-        ranges.push({
-          decorationRange: getNodeTypeDecoration("HeaderGap", false).range(
-            node.to,
-            node.to + gapMatch[1].length
-          ),
-          depth
-        });
+        const gapRangeKey = `${node.to}:${node.to + gapMatch[1].length}`;
+        decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
+
+        if (!decoratedRanges[gapRangeKey].includes("HeaderGap")) {
+          ranges.push({
+            decorationRange: getNodeTypeDecoration("HeaderGap", false).range(
+              node.to,
+              node.to + gapMatch[1].length
+            ),
+            depth
+          });
+          decoratedRanges[gapRangeKey].push("HeaderGap");
+        }
       }
     }
   }
@@ -96,11 +120,15 @@ const decorateNode = (
 
   if (cursor.firstChild()) {
     while (true) {
-      decorateNode(depth + 1, state, cursor.node, selectionRanges).forEach(
-        (childDecorationRange) => {
-          ranges.push(childDecorationRange);
-        }
-      );
+      decorateNode(
+        depth + 1,
+        state,
+        cursor.node,
+        selectionRanges,
+        decoratedRanges
+      ).forEach((childDecorationRange) => {
+        ranges.push(childDecorationRange);
+      });
 
       if (!cursor.nextSibling()) {
         break;
@@ -115,11 +143,12 @@ const updateDecorations = (
   previousFieldValue: FieldValue,
   transaction: PlainTransaction
 ) => {
+  let decorationSets = previousFieldValue.decorationSets;
+  const activeRanges = previousFieldValue.activeRanges;
+
   const oldState = transaction.oldState;
   const newState = transaction.newState;
-
-  let decorationSets: Record<string, DecorationSet> =
-    previousFieldValue.decorationSets;
+  const selectionRanges = transaction.selectionRanges;
 
   // Used to keep track of the range of lines affected by the transaction.
   const changedRanges: { before: NumericRange; after: NumericRange }[] = [];
@@ -135,13 +164,30 @@ const updateDecorations = (
   );
 
   if (changedRanges.length <= 0) {
-    transaction.selectionRanges.forEach((selectionRange) => {
-      changedRanges.push({
-        before: sortedNumericRange(selectionRange.from, selectionRange.to),
-        after: sortedNumericRange(selectionRange.from, selectionRange.to)
-      });
+    selectionRanges.forEach((selectionRange) => {
+      if (
+        selectionRange.to <= oldState.doc.length &&
+        selectionRange.to <= newState.doc.length
+      ) {
+        changedRanges.push({
+          before: sortedNumericRange(selectionRange.from, selectionRange.to),
+          after: sortedNumericRange(selectionRange.from, selectionRange.to)
+        });
+      }
     });
   }
+
+  activeRanges.forEach((activeRange) => {
+    if (
+      activeRange.to <= oldState.doc.length &&
+      activeRange.to <= newState.doc.length
+    ) {
+      changedRanges.push({
+        before: sortedNumericRange(activeRange.from, activeRange.to),
+        after: sortedNumericRange(activeRange.from, activeRange.to)
+      });
+    }
+  });
 
   const effectiveBeforeRanges: NumericRange[] = [];
 
@@ -184,6 +230,11 @@ const updateDecorations = (
       [depthKey]: decorationSets[depthKey].map(transaction.changes)
     };
   }, {} as Record<string, DecorationSet>);
+
+  // Since sometimes active/selection range can cause the same node to be
+  // traversed more than once, we use a dictionary to keep track of ranges that
+  // are already decorated to avoid this.
+  const decoratedRanges: Record<string, string[]> = {};
 
   // After applying changes in the transaction to `decorationSet`, create
   // decorations for all the `changedRanges.after` ranges and store those
@@ -238,27 +289,37 @@ const updateDecorations = (
       // Update decorations for inline markdown elements.
       iterateRootNodesInRange(newState, afterRange, (node) => {
         // Use layer `1` and onward for element type decorations.
-        decorateNode(1, newState, node, transaction.selectionRanges).forEach(
-          ({ decorationRange, depth }) => {
-            decorationSets[`${depth}`] = (
-              decorationSets[`${depth}`] || Decoration.none
-            ).update({
-              add: [decorationRange],
-              sort: true
-            });
-          }
-        );
+        decorateNode(
+          1,
+          newState,
+          node,
+          selectionRanges,
+          decoratedRanges
+        ).forEach(({ decorationRange, depth }) => {
+          decorationSets[`${depth}`] = (
+            decorationSets[`${depth}`] || Decoration.none
+          ).update({
+            add: [decorationRange],
+            sort: true
+          });
+        });
       });
     });
 
-  return { decorationSets: decorationSets };
+  return {
+    decorationSets: decorationSets,
+    activeRanges: selectionRanges
+  };
 };
 
 const stateField = () => {
   let pendingTransactions: Transaction[] = [];
 
   return StateField.define<FieldValue>({
-    create: () => ({ decorationSets: {} }),
+    create: () => ({
+      decorationSets: {},
+      activeRanges: []
+    }),
     update: (fieldValue, transaction) => {
       // TODO: Use `ensureSyntaxTree` to ensure the tree is fully available.
       const tree = syntaxTree(transaction.state);
@@ -282,6 +343,7 @@ const stateField = () => {
 
         // Apply changes to the field value.
         fieldValue.decorationSets = updated.decorationSets;
+        fieldValue.activeRanges = updated.activeRanges;
 
         return { ...fieldValue };
       } else {

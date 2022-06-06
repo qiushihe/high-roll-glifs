@@ -2,6 +2,8 @@ import { Decoration } from "@codemirror/view";
 
 type DecorationFn = (name: string) => Decoration;
 
+export const ACTIVE_NODE_CLASS_NAME = "hrg-ActiveNode";
+
 const lineDecoration: DecorationFn = (name: string) => {
   return Decoration.line({
     attributes: { class: `hrg-line-${name}` }
@@ -16,7 +18,7 @@ const markDecoration: DecorationFn = (name: string) => {
 
 const activeMarkDecoration: DecorationFn = (name: string) => {
   return Decoration.mark({
-    attributes: { class: `hrg-${name} hrg-ActiveNode` }
+    attributes: { class: `hrg-${name} ${ACTIVE_NODE_CLASS_NAME}` }
   });
 };
 
@@ -90,9 +92,13 @@ const DECORATION = {
 
 const ACTIVE_NODE_DECORATION = (
   [
-    ["Blockquote", activeMarkDecoration],
+    ["FencedCode", activeMarkDecoration],
     ["ATXHeading1", activeMarkDecoration],
     ["ATXHeading2", activeMarkDecoration],
+    ["ATXHeading3", activeMarkDecoration],
+    ["ATXHeading4", activeMarkDecoration],
+    ["ATXHeading5", activeMarkDecoration],
+    ["ATXHeading6", activeMarkDecoration],
     ["SetextHeading1", activeMarkDecoration],
     ["SetextHeading2", activeMarkDecoration],
     ["Emphasis", activeMarkDecoration],

@@ -1,6 +1,8 @@
 import { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import { ACTIVE_NODE_CLASS_NAME } from "./decoration";
+
 type ThemeConfig = {
   showLineTypeName: boolean;
 };
@@ -94,8 +96,71 @@ const theme = (config: ThemeConfig) =>
     }
   });
 
+const DEBUG = false;
+
+const STYLES_INACTIVE = DEBUG ? { opacity: 0.5 } : { display: "none" };
+
+const STYLES_ACTIVE = DEBUG ? { opacity: 1 } : { display: "inline" };
+
+const loveNodesTheme = () =>
+  EditorView.baseTheme({
+    ".hrg-Emphasis": {
+      "& .hrg-EmphasisMark": { ...STYLES_INACTIVE },
+      [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-EmphasisMark": { ...STYLES_ACTIVE }
+      }
+    },
+    ".hrg-StrongEmphasis": {
+      "& .hrg-EmphasisMark": { ...STYLES_INACTIVE },
+      [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-EmphasisMark": { ...STYLES_ACTIVE }
+      }
+    },
+    ".hrg-InlineCode": {
+      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
+      [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-CodeMark": { ...STYLES_ACTIVE }
+      }
+    },
+    ...[1, 2, 3, 4, 5, 6].reduce(
+      (acc, level) => ({
+        ...acc,
+        [`.hrg-ATXHeading${level}`]: {
+          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
+          "& .hrg-HeaderGap": { ...STYLES_INACTIVE },
+          [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+            "& .hrg-HeaderMark": { ...STYLES_ACTIVE },
+            "& .hrg-HeaderGap": { ...STYLES_ACTIVE }
+          }
+        }
+      }),
+      {}
+    ),
+    ...[1, 2].reduce(
+      (acc, level) => ({
+        ...acc,
+        [`.hrg-SetextHeading${level}`]: {
+          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
+          [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+            "& .hrg-HeaderMark": { ...STYLES_ACTIVE }
+          }
+        }
+      }),
+      {}
+    ),
+    ".hrg-FencedCode": {
+      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
+      "& .hrg-CodeInfo": { ...STYLES_INACTIVE },
+      [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-CodeMark": { ...STYLES_ACTIVE },
+        "& .hrg-CodeInfo": { ...STYLES_ACTIVE }
+      }
+    }
+  });
+
 type ExtensionConfig = ThemeConfig;
 
 export default (config: ExtensionConfig): Extension[] => [
-  theme({ showLineTypeName: config.showLineTypeName })
+  theme({ showLineTypeName: config.showLineTypeName }),
+  loveNodesTheme()
 ];
