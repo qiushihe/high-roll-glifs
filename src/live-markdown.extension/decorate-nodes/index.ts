@@ -1,4 +1,5 @@
 import { Extension } from "@codemirror/state";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
 import decorateNodes from "./decorate-nodes";
 import theme from "./theme";
@@ -8,5 +9,9 @@ type ExtensionConfig = {
 };
 
 export default (config: ExtensionConfig): Extension[] => {
-  return [...decorateNodes(), ...theme({ showLineTypeName: config.inspector })];
+  return [
+    markdown({ base: markdownLanguage, addKeymap: false }),
+    ...decorateNodes(),
+    ...theme({ showLineTypeName: config.inspector })
+  ];
 };

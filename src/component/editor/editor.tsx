@@ -1,17 +1,11 @@
-import React, {
-  ChangeEvent,
-  useEffect,
-  useState,
-  useRef,
-  useCallback
-} from "react";
+import React from "react";
+import { ChangeEvent, useEffect, useState, useRef, useCallback } from "react";
 import usePrevious from "use-previous";
 import PropTypes, { InferProps } from "prop-types";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
 import { getTestDocNames, getTestDocByName } from "/src/test-doc";
 
@@ -68,7 +62,6 @@ const Editor = ({
       extensions: [
         EditorView.lineWrapping,
         history(),
-        markdown({ base: markdownLanguage, addKeymap: false }),
         liveMarkdown({ processor, inspector: debug, liveNodes: true }),
         keymap.of(defaultKeymap),
         keymap.of(historyKeymap),
