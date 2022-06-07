@@ -37,6 +37,14 @@ export const EditorContainer = styled.div<{
     bottom: 0;
     outline: none;
 
+    .cm-line {
+      overflow: hidden;
+    }
+
+    .cm-gutterElement {
+      overflow: hidden;
+    }
+
     .cm-scroller {
       margin: ${flow([
         get("outerSpacing"),
