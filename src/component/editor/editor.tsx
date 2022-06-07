@@ -11,7 +11,8 @@ import { getTestDocNames, getTestDocByName } from "/src/test-doc";
 
 import {
   liveMarkdown,
-  LiveMarkdownProcessor
+  LiveMarkdownProcessor,
+  PresentationOptions
 } from "/src/live-markdown.extension";
 
 import { Base, EditorControls, EditorContainer } from "./editor.style";
@@ -23,6 +24,17 @@ const propTypes = {
 };
 
 export type EditorProps = InferProps<typeof propTypes>;
+
+const presentation: PresentationOptions = {
+  fontFamily: '"Open Sans", sans-serif',
+  monospaceFontFamily: '"Source Code Pro", monospace',
+  textColor: "#000333",
+  quotedTextColor: "#323bb7",
+  markColor: "#999999",
+  backgroundColor: "#eeeeee",
+  codeBackgroundColor: "#e7d8ae",
+  activeLineBackgroundColor: "#ede1e1"
+};
 
 const Editor = ({
   debug,
@@ -62,7 +74,16 @@ const Editor = ({
       extensions: [
         EditorView.lineWrapping,
         history(),
-        liveMarkdown({ processor, inspector: debug, liveNodes: true }),
+        liveMarkdown({
+          processor,
+          presentation,
+          options: {
+            showInspector: debug,
+            enableLiveNodes: true,
+            debugLiveNodes: false,
+            highlightActiveLine: true
+          }
+        }),
         keymap.of(defaultKeymap),
         keymap.of(historyKeymap),
         ...(debug ? [lineNumbers()] : [])
@@ -105,7 +126,11 @@ const Editor = ({
           </select>
         </label>
       </EditorControls>
-      <EditorContainer ref={editorContainerRef} outerSpacing={outerSpacing} />
+      <EditorContainer
+        ref={editorContainerRef}
+        outerSpacing={outerSpacing}
+        backgroundColor={presentation.backgroundColor}
+      />
     </Base>
   );
 };

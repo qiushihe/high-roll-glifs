@@ -1,16 +1,18 @@
 import { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import { PresentationOptions } from "../presentation";
 import { ACTIVE_NODE_CLASS_NAME } from "./decoration";
 
 type ThemeConfig = {
   showLineTypeName: boolean;
+  presentation: PresentationOptions;
 };
 
-const theme = (config: ThemeConfig) =>
-  EditorView.baseTheme({
+const theme = (config: ThemeConfig) => {
+  return EditorView.baseTheme({
     ".cm-line": {
-      fontFamily: '"Open Sans", sans-serif'
+      fontFamily: config.presentation.fontFamily
     },
     ...[
       "CodeBlock",
@@ -38,19 +40,56 @@ const theme = (config: ThemeConfig) =>
         ...acc,
         [`.hrg-line-${typeName}`]: {
           position: "relative",
+          color: config.presentation.textColor,
+          ...(typeName === "FencedCode" || typeName === "CodeBlock"
+            ? {
+                fontFamily: config.presentation.monospaceFontFamily
+              }
+            : {}),
           ...(config.showLineTypeName
             ? {
                 "&:after": {
                   content: `"${typeName}"`,
-                  display: "block",
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
                   position: "absolute",
                   top: "0",
                   right: "6px",
-                  fontFamily: "monospace",
+                  height: "100%",
+                  fontFamily: config.presentation.monospaceFontFamily,
                   fontSize: "10px"
                 }
               }
             : {})
+        }
+      }),
+      {}
+    ),
+    ...["Blockquote", "QuoteMark"].reduce(
+      (acc, markName) => ({
+        ...acc,
+        [`.hrg-${markName}`]: {
+          color: config.presentation.quotedTextColor
+        }
+      }),
+      {}
+    ),
+    ...["ListMark"].reduce(
+      (acc, markName) => ({
+        ...acc,
+        [`.hrg-${markName}`]: {
+          color: config.presentation.textColor
+        }
+      }),
+      {}
+    ),
+    ...["HeaderMark", "LinkMark", "EmphasisMark", "CodeMark"].reduce(
+      (acc, markName) => ({
+        ...acc,
+        [`.hrg-${markName}`]: {
+          color: config.presentation.markColor
         }
       }),
       {}
@@ -79,58 +118,65 @@ const theme = (config: ThemeConfig) =>
     ".hrg-StrongEmphasis": {
       fontWeight: "bold"
     },
-    ".hrg-HeaderMark": {
-      color: "grey"
-    },
-    ".hrg-ListMark": {
-      color: "red"
-    },
     ".hrg-InlineCode": {
-      fontFamily: '"Source Code Pro", monospace'
+      fontFamily: config.presentation.monospaceFontFamily,
+      backgroundColor: config.presentation.codeBackgroundColor
     },
-    ".hrg-line-FencedCode": {
-      fontFamily: '"Source Code Pro", monospace'
-    },
-    ".hrg-line-CodeBlock": {
-      fontFamily: '"Source Code Pro", monospace'
+    ".hrg-CodeText": {
+      fontFamily: config.presentation.monospaceFontFamily
     }
   });
+};
 
-const DEBUG = false;
+const LIVE_NODE_STYLE = {
+  inactive: { display: "none" },
+  active: { display: "inline" },
+  debug: {
+    inactive: { opacity: 0.5 },
+    active: { opacity: 1 }
+  }
+};
 
-const STYLES_INACTIVE = DEBUG ? { opacity: 0.5 } : { display: "none" };
+type LiveNodesThemeConfig = {
+  debugLiveNodes: boolean;
+};
 
-const STYLES_ACTIVE = DEBUG ? { opacity: 1 } : { display: "inline" };
+const liveNodesTheme = (config: LiveNodesThemeConfig) => {
+  const NODE_INACTIVE = config.debugLiveNodes
+    ? LIVE_NODE_STYLE.debug.inactive
+    : LIVE_NODE_STYLE.inactive;
+  const NODE_ACTIVE = config.debugLiveNodes
+    ? LIVE_NODE_STYLE.debug.active
+    : LIVE_NODE_STYLE.active;
 
-const loveNodesTheme = () =>
-  EditorView.baseTheme({
+  return EditorView.baseTheme({
     ".hrg-Emphasis": {
-      "& .hrg-EmphasisMark": { ...STYLES_INACTIVE },
+      "& .hrg-EmphasisMark": { ...NODE_INACTIVE },
       [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-        "& .hrg-EmphasisMark": { ...STYLES_ACTIVE }
+        "& .hrg-EmphasisMark": { ...NODE_ACTIVE }
       }
     },
     ".hrg-StrongEmphasis": {
-      "& .hrg-EmphasisMark": { ...STYLES_INACTIVE },
+      "& .hrg-EmphasisMark": { ...NODE_INACTIVE },
       [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-        "& .hrg-EmphasisMark": { ...STYLES_ACTIVE }
+        "& .hrg-EmphasisMark": { ...NODE_ACTIVE }
       }
     },
     ".hrg-InlineCode": {
-      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
+      "& .hrg-CodeMark": { ...NODE_INACTIVE },
       [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-        "& .hrg-CodeMark": { ...STYLES_ACTIVE }
+        "& .hrg-CodeMark": { ...NODE_ACTIVE }
       }
     },
     ...[1, 2, 3, 4, 5, 6].reduce(
       (acc, level) => ({
         ...acc,
         [`.hrg-ATXHeading${level}`]: {
-          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
-          "& .hrg-HeaderGap": { ...STYLES_INACTIVE },
+          "& .hrg-HeaderMark": { ...NODE_INACTIVE },
+          "& .hrg-HeaderGap": { ...NODE_INACTIVE },
           [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-            "& .hrg-HeaderMark": { ...STYLES_ACTIVE },
-            "& .hrg-HeaderGap": { ...STYLES_ACTIVE }
+            "& .hrg-HeaderMark": { ...NODE_ACTIVE },
+            "& .hrg-HeaderGap": { ...NODE_ACTIVE }
           }
         }
       }),
@@ -140,27 +186,36 @@ const loveNodesTheme = () =>
       (acc, level) => ({
         ...acc,
         [`.hrg-SetextHeading${level}`]: {
-          "& .hrg-HeaderMark": { ...STYLES_INACTIVE },
+          "& .hrg-HeaderMark": { ...NODE_INACTIVE },
           [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-            "& .hrg-HeaderMark": { ...STYLES_ACTIVE }
+            "& .hrg-HeaderMark": { ...NODE_ACTIVE }
           }
         }
       }),
       {}
     ),
     ".hrg-FencedCode": {
-      "& .hrg-CodeMark": { ...STYLES_INACTIVE },
-      "& .hrg-CodeInfo": { ...STYLES_INACTIVE },
+      "& .hrg-CodeMark": { ...NODE_INACTIVE },
+      "& .hrg-CodeInfo": { ...NODE_INACTIVE },
       [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
-        "& .hrg-CodeMark": { ...STYLES_ACTIVE },
-        "& .hrg-CodeInfo": { ...STYLES_ACTIVE }
+        "& .hrg-CodeMark": { ...NODE_ACTIVE },
+        "& .hrg-CodeInfo": { ...NODE_ACTIVE }
       }
     }
   });
+};
 
-type ExtensionConfig = ThemeConfig;
+type ExtensionConfig = ThemeConfig &
+  LiveNodesThemeConfig & {
+    enableLiveNodes: boolean;
+  };
 
 export default (config: ExtensionConfig): Extension[] => [
-  theme({ showLineTypeName: config.showLineTypeName }),
-  loveNodesTheme()
+  theme({
+    showLineTypeName: config.showLineTypeName,
+    presentation: config.presentation
+  }),
+  ...(config.enableLiveNodes
+    ? [liveNodesTheme({ debugLiveNodes: config.debugLiveNodes })]
+    : [])
 ];

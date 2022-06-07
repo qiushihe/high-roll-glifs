@@ -17,13 +17,17 @@ export const EditorControls = styled.div`
   flex: 0;
 `;
 
-export const EditorContainer = styled.div<{ outerSpacing: number }>`
+export const EditorContainer = styled.div<{
+  outerSpacing: number;
+  backgroundColor: string;
+}>`
   position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: auto;
+  background-color: ${get("backgroundColor")};
 
   .cm-editor {
     position: absolute !important;

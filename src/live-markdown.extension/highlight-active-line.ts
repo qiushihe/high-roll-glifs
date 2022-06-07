@@ -1,6 +1,8 @@
 import { StateField, Extension } from "@codemirror/state";
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
 
+import { PresentationOptions } from "./presentation";
+
 const ACTIVE_LINE_CLASS_NAME = "hrg-ActiveLine";
 
 const activeLineDecoration = Decoration.line({
@@ -47,11 +49,20 @@ const stateField = () =>
     }
   });
 
-const theme = () =>
+type ThemeConfig = {
+  presentation: PresentationOptions;
+};
+
+const theme = (config: ThemeConfig) =>
   EditorView.baseTheme({
     [`.${ACTIVE_LINE_CLASS_NAME}`]: {
-      backgroundColor: "#f0f8ff"
+      backgroundColor: config.presentation.activeLineBackgroundColor
     }
   });
 
-export default (): Extension[] => [stateField(), theme()];
+type ExtensionConfig = ThemeConfig;
+
+export default (config: ExtensionConfig): Extension[] => [
+  stateField(),
+  theme({ presentation: config.presentation })
+];
