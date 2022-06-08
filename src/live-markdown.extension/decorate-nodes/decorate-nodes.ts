@@ -15,7 +15,9 @@ import { iterateRootNodesInRange } from "./node";
 import {
   getLineTypeDecoration,
   getNodeTypeDecoration,
-  ACTIVE_NODE_TYPE_NAMES
+  ACTIVE_NODE_TYPE_NAMES,
+  nodeDecorator,
+  linkDecorator
 } from "./decoration";
 
 import {
@@ -61,6 +63,40 @@ const isNodeInRanges = (node: SyntaxNode, ranges: NumericRange[]): boolean => {
   return inRange;
 };
 
+const findChildNodeByType = (
+  parent: SyntaxNode,
+  childNodeType: string
+): SyntaxNode | null => {
+  const cursor = parent.cursor();
+
+  if (!cursor.firstChild()) {
+    return null;
+  }
+
+  let childNode: SyntaxNode | null = null;
+
+  while (true) {
+    if (cursor.node.type.name === childNodeType) {
+      childNode = cursor.node;
+      break;
+    }
+
+    if (!cursor.nextSibling()) {
+      break;
+    }
+  }
+
+  return childNode;
+};
+
+const getNodeText = (node: SyntaxNode, state: EditorState): string => {
+  if (node) {
+    return state.doc.sliceString(node.from, node.to) || "";
+  } else {
+    return "";
+  }
+};
+
 // Apply decoration to a given node as well as all of its child nodes.
 const decorateNode = (
   depth = 0,
@@ -80,11 +116,23 @@ const decorateNode = (
         isNodeInRanges(node, selectionRanges) &&
         ACTIVE_NODE_TYPE_NAMES.includes(node.type.name);
 
+      let decoration: Decoration;
+
+      // TODO: Refactor these to be injectable into this function in a more
+      //       formal manner
+      if (node.type.name === "Link") {
+        decoration = getNodeTypeDecoration(node.type.name, linkDecorator, {
+          isActive,
+          href: getNodeText(findChildNodeByType(node, "URL"), state)
+        });
+      } else {
+        decoration = getNodeTypeDecoration(node.type.name, nodeDecorator, {
+          isActive
+        });
+      }
+
       ranges.push({
-        decorationRange: getNodeTypeDecoration(node.type.name, isActive).range(
-          node.from,
-          node.to
-        ),
+        decorationRange: decoration.range(node.from, node.to),
         depth
       });
 
@@ -104,10 +152,9 @@ const decorateNode = (
 
         if (!decoratedRanges[gapRangeKey].includes("HeaderGap")) {
           ranges.push({
-            decorationRange: getNodeTypeDecoration("HeaderGap", false).range(
-              node.to,
-              node.to + gapMatch[1].length
-            ),
+            decorationRange: getNodeTypeDecoration("HeaderGap", nodeDecorator, {
+              isActive: false
+            }).range(node.to, node.to + gapMatch[1].length),
             depth
           });
           decoratedRanges[gapRangeKey].push("HeaderGap");

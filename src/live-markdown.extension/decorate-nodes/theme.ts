@@ -201,6 +201,14 @@ const liveNodesTheme = (config: LiveNodesThemeConfig) => {
         "& .hrg-CodeMark": { ...NODE_ACTIVE },
         "& .hrg-CodeInfo": { ...NODE_ACTIVE }
       }
+    },
+    ".hrg-Link": {
+      "& .hrg-LinkMark": { ...NODE_INACTIVE },
+      "& .hrg-URL": { ...NODE_INACTIVE },
+      [`&.${ACTIVE_NODE_CLASS_NAME}`]: {
+        "& .hrg-LinkMark": { ...NODE_ACTIVE },
+        "& .hrg-URL": { ...NODE_ACTIVE }
+      }
     }
   });
 };
