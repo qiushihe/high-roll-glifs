@@ -1,5 +1,7 @@
 import { Decoration } from "@codemirror/view";
 
+import { LinkWidget } from "./widget";
+
 export const ACTIVE_NODE_CLASS_NAME = "hrg-ActiveNode";
 
 export const ACTIVE_NODE_TYPE_NAMES = [
@@ -55,8 +57,7 @@ export const linkDecorator = (
     tagName: "a",
     attributes: {
       class: `hrg-Link ${options.isActive ? ACTIVE_NODE_CLASS_NAME : ""}`,
-      href: options.href,
-      target: "_blank"
+      href: options.href
     }
   });
 };
@@ -70,6 +71,18 @@ export const getNodeTypeDecoration = <TDecoratorOptions>(
 
   if (!ALL_DECORATIONS[key]) {
     ALL_DECORATIONS[key] = decorator(type, options);
+  }
+
+  return ALL_DECORATIONS[key];
+};
+
+export const getLinkWidget = (url: string): Decoration => {
+  const key = `link-widget||${url}`;
+
+  if (!ALL_DECORATIONS[key]) {
+    ALL_DECORATIONS[key] = Decoration.widget({
+      widget: new LinkWidget(url)
+    });
   }
 
   return ALL_DECORATIONS[key];

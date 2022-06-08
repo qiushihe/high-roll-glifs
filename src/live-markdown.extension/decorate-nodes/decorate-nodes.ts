@@ -15,6 +15,7 @@ import { iterateRootNodesInRange } from "./node";
 import {
   getLineTypeDecoration,
   getNodeTypeDecoration,
+  getLinkWidget,
   ACTIVE_NODE_TYPE_NAMES,
   nodeDecorator,
   linkDecorator
@@ -116,24 +117,40 @@ const decorateNode = (
         isNodeInRanges(node, selectionRanges) &&
         ACTIVE_NODE_TYPE_NAMES.includes(node.type.name);
 
-      let decoration: Decoration;
+      const decorations: [Decoration, [number, number] | [number]][] = [];
 
       // TODO: Refactor these to be injectable into this function in a more
       //       formal manner
       if (node.type.name === "Link") {
-        decoration = getNodeTypeDecoration(node.type.name, linkDecorator, {
-          isActive,
-          href: getNodeText(findChildNodeByType(node, "URL"), state)
-        });
+        // TODO: Support link title
+        // TODO: Support link with only URL
+        // TODO: Support reference link
+
+        const url = getNodeText(findChildNodeByType(node, "URL"), state);
+
+        decorations.push([
+          getNodeTypeDecoration(node.type.name, linkDecorator, {
+            isActive,
+            href: url
+          }),
+          [node.from, node.to]
+        ]);
+
+        decorations.push([getLinkWidget(url), [node.to]]);
       } else {
-        decoration = getNodeTypeDecoration(node.type.name, nodeDecorator, {
-          isActive
-        });
+        decorations.push([
+          getNodeTypeDecoration(node.type.name, nodeDecorator, {
+            isActive
+          }),
+          [node.from, node.to]
+        ]);
       }
 
-      ranges.push({
-        decorationRange: decoration.range(node.from, node.to),
-        depth
+      decorations.forEach(([decoration, range]) => {
+        ranges.push({
+          decorationRange: decoration.range(range[0], range[1]),
+          depth
+        });
       });
 
       decoratedRanges[nodeRangeKey].push(node.type.name);

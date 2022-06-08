@@ -209,6 +209,10 @@ const liveNodesTheme = (config: LiveNodesThemeConfig) => {
         "& .hrg-LinkMark": { ...NODE_ACTIVE },
         "& .hrg-URL": { ...NODE_ACTIVE }
       }
+    },
+    ".hrg-LinkWidget": {
+      cursor: "pointer",
+      textDecoration: "none"
     }
   });
 };
