@@ -6,7 +6,7 @@ import { StateField, Extension, Transaction } from "@codemirror/state";
 import { iterateRootNodesInRange } from "./node";
 import { NumericRange, sortedNumericRange } from "./range";
 import { getLineTypeDecoration } from "./decoration";
-import { getNodeDecorationRanges } from "./decoration-range";
+import { getGraduatedDecorationRanges } from "./decoration-range";
 
 import {
   PlainTransaction,
@@ -169,7 +169,7 @@ const updateDecorations = (
       // Update decorations for inline markdown elements.
       iterateRootNodesInRange(newState, afterRange, (node) => {
         // Use layer `1` and onward for element type decorations.
-        getNodeDecorationRanges(
+        getGraduatedDecorationRanges(
           1,
           newState,
           node,

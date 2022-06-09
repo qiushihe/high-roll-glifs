@@ -210,54 +210,6 @@ const liveNodesTheme = (config: LiveNodesThemeConfig) => {
         "& .hrg-URL": { ...NODE_ACTIVE }
       }
     },
-    ".hrg-BulletList:not(.hrg-ActiveNode) > .hrg-ListItem": {
-      "& > .hrg-ListMark": {
-        display: "inline-flex",
-        position: "relative",
-        width: "1em",
-        marginRight: "4px",
-        textIndent: "1em",
-        overflow: "hidden",
-        "&:after": {
-          content: '"○"',
-          display: "inline-flex",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          textIndent: 0,
-          lineHeight: "1em",
-          alignItems: "center",
-          justifyContent: "center"
-        }
-      },
-      "& > .hrg-ListMarkGap": {
-        display: "none"
-      }
-    },
-    ".hrg-OrderedList:not(.hrg-ActiveNode) > .hrg-ListItem": {
-      "& > .hrg-ListMark": {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: "3px",
-        marginRight: "-4px",
-        padding: "0 5px",
-        whiteSpace: "nowrap",
-        transform: "scale(0.9)",
-        transformOrigin: "left",
-        "&:after": {
-          content: '"."'
-        },
-        "& .hrg-ListMarker": {
-          display: "none"
-        }
-      },
-      "& > .hrg-ListMarkGap": {
-        display: "none"
-      }
-    },
     ".hrg-LinkWidget": {
       cursor: "pointer",
       textDecoration: "none"

@@ -17,9 +17,7 @@ export const ACTIVE_NODE_TYPE_NAMES = [
   "Emphasis",
   "StrongEmphasis",
   "InlineCode",
-  "Link",
-  "BulletList",
-  "OrderedList"
+  "Link"
 ];
 
 const ALL_DECORATIONS: Record<string, Decoration> = {};
@@ -29,7 +27,7 @@ export const getLineTypeDecoration = (type: string): Decoration => {
 
   if (!ALL_DECORATIONS[key]) {
     ALL_DECORATIONS[key] = Decoration.line({
-      attributes: { class: `hrg-line-${type}` }
+      attributes: { class: `hrg-Line hrg-line-${type}` }
     });
   }
 
@@ -46,7 +44,20 @@ export const nodeDecorator = (
 ): Decoration => {
   return Decoration.mark({
     attributes: {
-      class: `hrg-${type} ${options.isActive ? ACTIVE_NODE_CLASS_NAME : ""}`
+      class: `hrg-Node hrg-${type} ${
+        options.isActive ? ACTIVE_NODE_CLASS_NAME : ""
+      }`
+    }
+  });
+};
+
+export const gapDecorator = (
+  type: string,
+  UNUSED_options: never
+): Decoration => {
+  return Decoration.mark({
+    attributes: {
+      class: `hrg-Gap hrg-${type}`
     }
   });
 };
