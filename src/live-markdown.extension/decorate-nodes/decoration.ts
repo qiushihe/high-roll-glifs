@@ -67,7 +67,7 @@ export const linkDecorator = (
 export const getNodeTypeDecoration = <TDecoratorOptions>(
   type: string,
   decorator: (type: string, opts: TDecoratorOptions) => Decoration,
-  options: NodeDecoratorOptions & TDecoratorOptions
+  options: TDecoratorOptions
 ): Decoration => {
   const key = `node-type||${type}||${JSON.stringify(options)}`;
 
@@ -78,7 +78,7 @@ export const getNodeTypeDecoration = <TDecoratorOptions>(
   return ALL_DECORATIONS[key];
 };
 
-export const getLinkWidget = (url: string): Decoration => {
+export const getLinkWidgetDecoration = (url: string): Decoration => {
   const key = `link-widget||${url}`;
 
   if (!ALL_DECORATIONS[key]) {

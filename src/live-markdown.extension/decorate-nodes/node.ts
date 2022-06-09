@@ -161,3 +161,66 @@ export const iterateRootNodesInRange = (
   // range processed by this function, we return the effective range.
   return { from: rootBlockRangeFrom, to: rootBlockRangeTo };
 };
+
+export const findChildNodeByType = (
+  parent: SyntaxNode,
+  childNodeType: string
+): SyntaxNode | null => {
+  const cursor = parent.cursor();
+
+  if (!cursor.firstChild()) {
+    return null;
+  }
+
+  let childNode: SyntaxNode | null = null;
+
+  while (true) {
+    if (cursor.node.type.name === childNodeType) {
+      childNode = cursor.node;
+      break;
+    }
+
+    if (!cursor.nextSibling()) {
+      break;
+    }
+  }
+
+  return childNode;
+};
+
+export const getNodeText = (node: SyntaxNode, state: EditorState): string => {
+  if (node) {
+    return state.doc.sliceString(node.from, node.to) || "";
+  } else {
+    return "";
+  }
+};
+
+export const isNodeInRanges = (
+  node: SyntaxNode,
+  ranges: NumericRange[]
+): boolean => {
+  let inRange = false;
+
+  ranges.find((range) => {
+    if (range.from <= node.to) {
+      if (range.from >= node.from) {
+        inRange = true;
+      } else {
+        if (range.to >= node.from) {
+          inRange = true;
+        } else {
+          inRange = false;
+        }
+      }
+    } else {
+      inRange = false;
+    }
+
+    if (inRange) {
+      return true;
+    }
+  });
+
+  return inRange;
+};

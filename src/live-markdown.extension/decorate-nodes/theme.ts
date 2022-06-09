@@ -242,11 +242,10 @@ const liveNodesTheme = (config: LiveNodesThemeConfig) => {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: "3px",
-        minWidth: "1em",
-        marginRight: "-6px",
+        marginRight: "-4px",
         padding: "0 5px",
         whiteSpace: "nowrap",
-        transform: "scale(0.8)",
+        transform: "scale(0.9)",
         transformOrigin: "left",
         "&:after": {
           content: '"."'

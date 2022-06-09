@@ -1,25 +1,12 @@
 import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { Range } from "@codemirror/state";
-import { SyntaxNode } from "@lezer/common";
-
-import {
-  StateField,
-  Extension,
-  Transaction,
-  EditorState
-} from "@codemirror/state";
+import { StateField, Extension, Transaction } from "@codemirror/state";
 
 import { iterateRootNodesInRange } from "./node";
-
-import {
-  getLineTypeDecoration,
-  getNodeTypeDecoration,
-  getLinkWidget,
-  ACTIVE_NODE_TYPE_NAMES,
-  nodeDecorator,
-  linkDecorator
-} from "./decoration";
+import { NumericRange, sortedNumericRange } from "./range";
+import { getLineTypeDecoration } from "./decoration";
+import { getNodeDecorationRanges } from "./decoration-range";
 
 import {
   PlainTransaction,
@@ -27,226 +14,9 @@ import {
   composeTransactions
 } from "./transaction";
 
-import {
-  NumericRange,
-  GraduatedDecorationRange,
-  sortedNumericRange
-} from "./range";
-
 type FieldValue = {
   decorationSets: Record<string, DecorationSet>;
   activeRanges: NumericRange[];
-};
-
-const isNodeInRanges = (node: SyntaxNode, ranges: NumericRange[]): boolean => {
-  let inRange = false;
-
-  ranges.find((range) => {
-    if (range.from <= node.to) {
-      if (range.from >= node.from) {
-        inRange = true;
-      } else {
-        if (range.to >= node.from) {
-          inRange = true;
-        } else {
-          inRange = false;
-        }
-      }
-    } else {
-      inRange = false;
-    }
-
-    if (inRange) {
-      return true;
-    }
-  });
-
-  return inRange;
-};
-
-const findChildNodeByType = (
-  parent: SyntaxNode,
-  childNodeType: string
-): SyntaxNode | null => {
-  const cursor = parent.cursor();
-
-  if (!cursor.firstChild()) {
-    return null;
-  }
-
-  let childNode: SyntaxNode | null = null;
-
-  while (true) {
-    if (cursor.node.type.name === childNodeType) {
-      childNode = cursor.node;
-      break;
-    }
-
-    if (!cursor.nextSibling()) {
-      break;
-    }
-  }
-
-  return childNode;
-};
-
-const getNodeText = (node: SyntaxNode, state: EditorState): string => {
-  if (node) {
-    return state.doc.sliceString(node.from, node.to) || "";
-  } else {
-    return "";
-  }
-};
-
-// Apply decoration to a given node as well as all of its child nodes.
-const decorateNode = (
-  depth = 0,
-  state: EditorState,
-  node: SyntaxNode,
-  selectionRanges: NumericRange[],
-  decoratedRanges: Record<string, string[]>
-): GraduatedDecorationRange[] => {
-  const ranges: GraduatedDecorationRange[] = [];
-
-  if (node.from !== node.to) {
-    const nodeRangeKey = `${node.from}:${node.to}`;
-    decoratedRanges[nodeRangeKey] = decoratedRanges[nodeRangeKey] || [];
-
-    if (!decoratedRanges[nodeRangeKey].includes(node.type.name)) {
-      const isActive =
-        isNodeInRanges(node, selectionRanges) &&
-        ACTIVE_NODE_TYPE_NAMES.includes(node.type.name);
-
-      const decorations: [Decoration, [number, number] | [number]][] = [];
-
-      // TODO: Refactor these to be injectable into this function in a more
-      //       formal manner
-      if (node.type.name === "Link") {
-        // TODO: Support link title
-        // TODO: Support link with only URL
-        // TODO: Support reference link
-
-        const url = getNodeText(findChildNodeByType(node, "URL"), state);
-
-        decorations.push([
-          getNodeTypeDecoration(node.type.name, linkDecorator, {
-            isActive,
-            href: url
-          }),
-          [node.from, node.to]
-        ]);
-
-        decorations.push([getLinkWidget(url), [node.to]]);
-      } else {
-        decorations.push([
-          getNodeTypeDecoration(node.type.name, nodeDecorator, {
-            isActive
-          }),
-          [node.from, node.to]
-        ]);
-      }
-
-      decorations.forEach(([decoration, range]) => {
-        ranges.push({
-          decorationRange: decoration.range(range[0], range[1]),
-          depth
-        });
-      });
-
-      decoratedRanges[nodeRangeKey].push(node.type.name);
-    }
-
-    // TODO: Refactor these to be injectable into this function in a more
-    //       formal manner
-    if (
-      node.type.name === "HeaderMark" &&
-      node.parent?.type.name.match(/^ATXHeading/)
-    ) {
-      const gapMatch = state.doc
-        .sliceString(node.parent.from, node.parent.to)
-        .match(/^#+(\s+)/);
-
-      const gapRangeKey = `${node.to}:${node.to + gapMatch[1].length}`;
-      decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
-
-      if (!decoratedRanges[gapRangeKey].includes("HeaderGap")) {
-        ranges.push({
-          decorationRange: getNodeTypeDecoration("HeaderGap", nodeDecorator, {
-            isActive: false
-          }).range(node.to, node.to + gapMatch[1].length),
-          depth
-        });
-        decoratedRanges[gapRangeKey].push("HeaderGap");
-      }
-    } else if (
-      node.type.name === "ListMark" &&
-      node.parent?.type.name === "ListItem" &&
-      (node.parent?.parent?.type.name === "BulletList" ||
-        node.parent?.parent?.type.name === "OrderedList")
-    ) {
-      const markLength = state.doc.sliceString(node.from, node.to).length;
-      const itemString = state.doc.sliceString(
-        node.parent.from,
-        node.parent.to
-      );
-      const gapLength = itemString.substr(markLength).match(/^\s+/)[0].length;
-
-      const gapRangeKey = `${node.to}:${node.to + gapLength}`;
-      decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
-
-      if (!decoratedRanges[gapRangeKey].includes("ListMarkGap")) {
-        ranges.push({
-          decorationRange: getNodeTypeDecoration("ListMarkGap", nodeDecorator, {
-            isActive: false
-          }).range(node.to, node.to + gapLength),
-          depth: depth
-        });
-        decoratedRanges[gapRangeKey].push("ListMarkGap");
-      }
-
-      if (node.parent?.parent?.type.name === "OrderedList") {
-        // List marker can only ever be 1 character long
-        const markerRangeKey = `${node.to - 1}:${node.to}`;
-        decoratedRanges[markerRangeKey] = decoratedRanges[markerRangeKey] || [];
-
-        if (!decoratedRanges[markerRangeKey].includes("ListMarker")) {
-          ranges.push({
-            decorationRange: getNodeTypeDecoration(
-              "ListMarker",
-              nodeDecorator,
-              {
-                isActive: false
-              }
-            ).range(node.to - 1, node.to),
-            depth: depth + 1
-          });
-          decoratedRanges[markerRangeKey].push("ListMarker");
-        }
-      }
-    }
-  }
-
-  const cursor = node.cursor();
-
-  if (cursor.firstChild()) {
-    while (true) {
-      decorateNode(
-        depth + 1,
-        state,
-        cursor.node,
-        selectionRanges,
-        decoratedRanges
-      ).forEach((childDecorationRange) => {
-        ranges.push(childDecorationRange);
-      });
-
-      if (!cursor.nextSibling()) {
-        break;
-      }
-    }
-  }
-
-  return ranges;
 };
 
 const updateDecorations = (
@@ -399,7 +169,7 @@ const updateDecorations = (
       // Update decorations for inline markdown elements.
       iterateRootNodesInRange(newState, afterRange, (node) => {
         // Use layer `1` and onward for element type decorations.
-        decorateNode(
+        getNodeDecorationRanges(
           1,
           newState,
           node,
