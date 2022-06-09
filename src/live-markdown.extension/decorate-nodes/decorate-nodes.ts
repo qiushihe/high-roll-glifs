@@ -158,23 +158,69 @@ const decorateNode = (
 
     // TODO: Refactor these to be injectable into this function in a more
     //       formal manner
-    if (node.type.name === "HeaderMark") {
-      if (node.parent?.type.name.match(/^ATXHeading/)) {
-        const gapMatch = state.doc
-          .sliceString(node.parent.from, node.parent.to)
-          .match(/^#+(\s+)/);
+    if (
+      node.type.name === "HeaderMark" &&
+      node.parent?.type.name.match(/^ATXHeading/)
+    ) {
+      const gapMatch = state.doc
+        .sliceString(node.parent.from, node.parent.to)
+        .match(/^#+(\s+)/);
 
-        const gapRangeKey = `${node.to}:${node.to + gapMatch[1].length}`;
-        decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
+      const gapRangeKey = `${node.to}:${node.to + gapMatch[1].length}`;
+      decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
 
-        if (!decoratedRanges[gapRangeKey].includes("HeaderGap")) {
+      if (!decoratedRanges[gapRangeKey].includes("HeaderGap")) {
+        ranges.push({
+          decorationRange: getNodeTypeDecoration("HeaderGap", nodeDecorator, {
+            isActive: false
+          }).range(node.to, node.to + gapMatch[1].length),
+          depth
+        });
+        decoratedRanges[gapRangeKey].push("HeaderGap");
+      }
+    } else if (
+      node.type.name === "ListMark" &&
+      node.parent?.type.name === "ListItem" &&
+      (node.parent?.parent?.type.name === "BulletList" ||
+        node.parent?.parent?.type.name === "OrderedList")
+    ) {
+      const markLength = state.doc.sliceString(node.from, node.to).length;
+      const itemString = state.doc.sliceString(
+        node.parent.from,
+        node.parent.to
+      );
+      const gapLength = itemString.substr(markLength).match(/^\s+/)[0].length;
+
+      const gapRangeKey = `${node.to}:${node.to + gapLength}`;
+      decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
+
+      if (!decoratedRanges[gapRangeKey].includes("ListMarkGap")) {
+        ranges.push({
+          decorationRange: getNodeTypeDecoration("ListMarkGap", nodeDecorator, {
+            isActive: false
+          }).range(node.to, node.to + gapLength),
+          depth: depth
+        });
+        decoratedRanges[gapRangeKey].push("ListMarkGap");
+      }
+
+      if (node.parent?.parent?.type.name === "OrderedList") {
+        // List marker can only ever be 1 character long
+        const markerRangeKey = `${node.to - 1}:${node.to}`;
+        decoratedRanges[markerRangeKey] = decoratedRanges[markerRangeKey] || [];
+
+        if (!decoratedRanges[markerRangeKey].includes("ListMarker")) {
           ranges.push({
-            decorationRange: getNodeTypeDecoration("HeaderGap", nodeDecorator, {
-              isActive: false
-            }).range(node.to, node.to + gapMatch[1].length),
-            depth
+            decorationRange: getNodeTypeDecoration(
+              "ListMarker",
+              nodeDecorator,
+              {
+                isActive: false
+              }
+            ).range(node.to - 1, node.to),
+            depth: depth + 1
           });
-          decoratedRanges[gapRangeKey].push("HeaderGap");
+          decoratedRanges[markerRangeKey].push("ListMarker");
         }
       }
     }

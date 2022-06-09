@@ -5,7 +5,7 @@ export class LinkWidget extends WidgetType {
     super();
   }
 
-  toDOM() {
+  toDOM(): HTMLElement {
     const dom = document.createElement("a");
     dom.className = "hrg-Widget hrg-LinkWidget";
     dom.setAttribute("target", "_blank");
@@ -19,7 +19,7 @@ export class LinkWidget extends WidgetType {
     return dom;
   }
 
-  ignoreEvent() {
+  ignoreEvent(): boolean {
     return true;
   }
 }

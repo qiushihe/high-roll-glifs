@@ -17,7 +17,9 @@ export const ACTIVE_NODE_TYPE_NAMES = [
   "Emphasis",
   "StrongEmphasis",
   "InlineCode",
-  "Link"
+  "Link",
+  "BulletList",
+  "OrderedList"
 ];
 
 const ALL_DECORATIONS: Record<string, Decoration> = {};
