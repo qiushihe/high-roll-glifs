@@ -93,6 +93,35 @@ export const getGraduatedDecorationRanges = (
           });
           decoratedRanges[gapRangeKey].push("HeaderGap");
         }
+      } else if (node.type.name === "QuoteMark") {
+        // TODO: Scan paragraph inside blockquote to mark whitespace after a
+        //       newline character as gap as well.
+
+        let gapOffset = 0;
+        while (true) {
+          const gapStr = state.doc.sliceString(node.to, node.to + gapOffset);
+          if (gapStr.length > 0 && gapStr.substr(gapStr.length - 1) !== " ") {
+            break;
+          }
+          gapOffset++;
+        }
+
+        const gapLength = gapOffset - 1;
+
+        if (gapLength > 0) {
+          const gapRangeKey = `${node.to}:${node.to + gapLength}`;
+          decoratedRanges[gapRangeKey] = decoratedRanges[gapRangeKey] || [];
+
+          if (!decoratedRanges[gapRangeKey].includes("QuoteGap")) {
+            ranges.push({
+              decorationRange: getNodeTypeDecoration("QuoteGap", gapDecorator, {
+                isActive: false
+              }).range(node.to, node.to + gapLength),
+              depth: depth + 1
+            });
+            decoratedRanges[gapRangeKey].push("QuoteGap");
+          }
+        }
       }
     }
   }

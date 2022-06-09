@@ -210,6 +210,15 @@ const liveNodesTheme = (config: LiveNodesThemeConfig) => {
         "& .hrg-URL": { ...NODE_ACTIVE }
       }
     },
+    [`.hrg-Blockquote:not(.${ACTIVE_NODE_CLASS_NAME})`]: {
+      "&:before": {
+        content: '"❯"',
+        marginRight: "0.5em"
+      },
+      "& .hrg-QuoteMark, & .hrg-QuoteGap": {
+        display: "none"
+      }
+    },
     ".hrg-LinkWidget": {
       cursor: "pointer",
       textDecoration: "none"
