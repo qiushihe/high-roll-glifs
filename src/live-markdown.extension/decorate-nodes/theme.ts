@@ -2,7 +2,7 @@ import { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 import { PresentationOptions } from "../presentation";
-import { ACTIVE_NODE_CLASS_NAME } from "./decoration";
+import { ACTIVE_NODE_CLASS_NAME } from "./node-decorator";
 
 type ThemeConfig = {
   showLineTypeName: boolean;
