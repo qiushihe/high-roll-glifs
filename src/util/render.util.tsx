@@ -1,11 +1,10 @@
-import { ReactNode, Component, createElement } from "react";
-
-type ContainerComponent<TProps> = new (...args: unknown[]) => Component<
-  TProps,
-  unknown
->;
+import React from "react";
 
 export const withContainer =
-  <TProps, UNUSED_T>(Container: ContainerComponent<TProps>, props: TProps) =>
-  (children: ReactNode): ReactNode =>
-    createElement(Container, props, children);
+  <TProps, UNUSED_T>(
+    Container: (props: TProps) => JSX.Element,
+    props: TProps
+  ) =>
+  (children: JSX.Element): JSX.Element => {
+    return <Container {...props}>{children}</Container>;
+  };

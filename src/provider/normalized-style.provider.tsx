@@ -1,7 +1,6 @@
-import React, { PureComponent, ReactNode } from "react";
+import React from "react";
 import PropTypes, { InferProps } from "prop-types";
 import { createGlobalStyle } from "styled-components";
-
 import { Normalize as NormalizeStyles } from "styled-normalize";
 
 const GlobalStyle = createGlobalStyle`
@@ -23,27 +22,24 @@ const propTypes = {
   ])
 };
 
-const defaultProps = {
-  children: null
+export type NormalizedStyleProviderProps = InferProps<typeof propTypes>;
+
+const NormalizedStyleProvider = ({
+  children
+}: NormalizedStyleProviderProps): JSX.Element => {
+  return (
+    <React.Fragment>
+      <NormalizeStyles />
+      <GlobalStyle />
+      {children}
+    </React.Fragment>
+  );
 };
 
-export class NormalizedStyleProvider extends PureComponent<
-  InferProps<typeof propTypes>
-> {
-  static propTypes = propTypes;
-  static defaultProps = defaultProps;
+NormalizedStyleProvider.propTypes = propTypes;
 
-  render(): ReactNode {
-    const { children } = this.props;
-
-    return (
-      <React.Fragment>
-        <NormalizeStyles />
-        <GlobalStyle />
-        {children}
-      </React.Fragment>
-    );
-  }
-}
+NormalizedStyleProvider.defaultProps = {
+  children: null
+};
 
 export default NormalizedStyleProvider;
